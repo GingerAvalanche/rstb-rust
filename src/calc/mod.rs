@@ -937,7 +937,6 @@ mod tests {
                                 Endian::Big,
                             )
                             .unwrap();
-                            println!("Calc difference: {}", calc_size - rstb_entry);
                             assert_ge!(calc_size, rstb_entry);
                             result.insert(param_name);
                         } else {
