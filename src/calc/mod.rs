@@ -862,6 +862,7 @@ mod tests {
     #[test]
     fn test_all_bchemical() {
         use std::collections::HashSet;
+        use std::path::PathBuf;
         use dirs2;
         use ryml::Tree;
         use roead::{aamp::ParameterIO, sarc};
@@ -878,22 +879,21 @@ mod tests {
         let settings = Tree::parse(
                 std::fs::read_to_string(settings_path).unwrap()
             ).unwrap();
-        let profile_node = settings.root_ref()
+        let source_node = settings.root_ref()
             .unwrap()
             .get("wiiu_config")
             .unwrap()
-            .get("profile")
-            .unwrap();
-        let profile = profile_node.val().unwrap();
-        let root = dirs2::data_local_dir()
+            .get("dump")
             .unwrap()
-            .join("ukmm")
-            .join("wiiu")
-            .join("profiles")
-            .join(profile)
-            .join("merged")
-            .join("content");
-        let rstb_path = root
+            .get("source")
+            .unwrap();
+        let valid = source_node.get("type").unwrap().val().unwrap() == "Unpacked";
+        if !valid {
+            println!("Cannot extract wua dump for testing!");
+            return;
+        }
+        let update_path = PathBuf::from(source_node.get("update_dir").unwrap().val().unwrap());
+        let rstb_path = update_path
             .join("System")
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
@@ -901,7 +901,7 @@ mod tests {
                 std::fs::read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
-                root.join("Actor")
+                update_path.join("Actor")
                     .join("Pack")
                     .join("*.sbactorpack")
                     .to_string_lossy()
@@ -937,6 +937,7 @@ mod tests {
                                 Endian::Big,
                             )
                             .unwrap();
+                            println!("Calc difference: {}", calc_size - rstb_entry);
                             assert_ge!(calc_size, rstb_entry);
                             result.insert(param_name);
                         } else {

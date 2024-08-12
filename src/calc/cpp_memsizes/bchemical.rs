@@ -8,7 +8,7 @@ use crate::Endian;
 const CLASS_SIZE_WIIU: usize = std::mem::size_of::<Chemical<u32>>();
 const CLASS_SIZE_NX: usize = std::mem::size_of::<Chemical<u64>>();
 
-const OVERHEAD_WIIU: usize = 0x0;
+const OVERHEAD_WIIU: usize = 0x50;
 
 pub fn parse_size(bytes: &[u8], endian: Endian) -> Option<u32> {
     let mut total_size = match endian {
