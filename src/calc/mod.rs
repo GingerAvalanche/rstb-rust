@@ -500,11 +500,59 @@ fn estimate_bfres(filesize: usize, endian: Endian) -> u32 {
 
 #[cfg(test)]
 mod tests {
-    use std::fs::read;
+    use std::{fs::read, path::PathBuf};
 
     use all_asserts::assert_ge;
 
     use crate::Endian;
+
+    fn get_update_path() -> PathBuf {
+        use ryml::Tree;
+
+        let settings_path = dirs2::data_dir()
+            .unwrap()
+            .join("ukmm")
+            .join("settings.yml");
+        let settings = Tree::parse(
+                std::fs::read_to_string(settings_path).unwrap()
+            ).unwrap();
+        let source_node = settings.root_ref()
+            .unwrap()
+            .get("wiiu_config")
+            .unwrap()
+            .get("dump")
+            .unwrap()
+            .get("source")
+            .unwrap();
+
+        assert_eq!(source_node.get("type").unwrap().val().unwrap(), "Unpacked");
+
+        PathBuf::from(source_node.get("update_dir").unwrap().val().unwrap())
+    }
+
+    fn get_update_path_nx() -> PathBuf {
+        use ryml::Tree;
+
+        let settings_path = dirs2::data_dir()
+            .unwrap()
+            .join("ukmm")
+            .join("settings.yml");
+        let settings = Tree::parse(
+                std::fs::read_to_string(settings_path).unwrap()
+            ).unwrap();
+        let source_node = settings.root_ref()
+            .unwrap()
+            .get("switch_config")
+            .unwrap()
+            .get("dump")
+            .unwrap()
+            .get("source")
+            .unwrap();
+
+        assert_eq!(source_node.get("type").unwrap().val().unwrap(), "Unpacked");
+
+        PathBuf::from(source_node.get("content_dir").unwrap().val().unwrap())
+    }
 
     #[test]
     fn calc_sizes() {
@@ -678,8 +726,6 @@ mod tests {
     #[test]
     fn test_all_baiprog() {
         use std::collections::HashSet;
-        use dirs2;
-        use ryml::Tree;
         use roead::{aamp::ParameterIO, sarc};
 
         use glob::glob;
@@ -687,29 +733,8 @@ mod tests {
         use crate::ResourceSizeTable;
         let mut result: HashSet<String> = HashSet::new();
 
-        let settings_path = dirs2::data_dir()
-            .unwrap()
-            .join("ukmm")
-            .join("settings.yml");
-        let settings = Tree::parse(
-                std::fs::read_to_string(settings_path).unwrap()
-            ).unwrap();
-        let profile_node = settings.root_ref()
-            .unwrap()
-            .get("wiiu_config")
-            .unwrap()
-            .get("profile")
-            .unwrap();
-        let profile = profile_node.val().unwrap();
-        let root = dirs2::data_local_dir()
-            .unwrap()
-            .join("ukmm")
-            .join("wiiu")
-            .join("profiles")
-            .join(profile)
-            .join("merged")
-            .join("content");
-        let rstb_path = root
+        let update_path = get_update_path();
+        let rstb_path = update_path
             .join("System")
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
@@ -717,7 +742,7 @@ mod tests {
                 std::fs::read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
-                root.join("Actor")
+                update_path.join("Actor")
                     .join("Pack")
                     .join("*.sbactorpack")
                     .to_string_lossy()
@@ -770,8 +795,6 @@ mod tests {
     #[test]
     fn test_all_baslist() {
         use std::collections::HashSet;
-        use dirs2;
-        use ryml::Tree;
         use roead::{aamp::ParameterIO, sarc};
 
         use glob::glob;
@@ -779,29 +802,8 @@ mod tests {
         use crate::ResourceSizeTable;
         let mut result: HashSet<String> = HashSet::new();
 
-        let settings_path = dirs2::data_dir()
-            .unwrap()
-            .join("ukmm")
-            .join("settings.yml");
-        let settings = Tree::parse(
-                std::fs::read_to_string(settings_path).unwrap()
-            ).unwrap();
-        let profile_node = settings.root_ref()
-            .unwrap()
-            .get("wiiu_config")
-            .unwrap()
-            .get("profile")
-            .unwrap();
-        let profile = profile_node.val().unwrap();
-        let root = dirs2::data_local_dir()
-            .unwrap()
-            .join("ukmm")
-            .join("wiiu")
-            .join("profiles")
-            .join(profile)
-            .join("merged")
-            .join("content");
-        let rstb_path = root
+        let update_path = get_update_path();
+        let rstb_path = update_path
             .join("System")
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
@@ -809,7 +811,7 @@ mod tests {
                 std::fs::read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
-                root.join("Actor")
+                update_path.join("Actor")
                     .join("Pack")
                     .join("*.sbactorpack")
                     .to_string_lossy()
@@ -862,9 +864,6 @@ mod tests {
     #[test]
     fn test_all_bchemical() {
         use std::collections::HashSet;
-        use std::path::PathBuf;
-        use dirs2;
-        use ryml::Tree;
         use roead::{aamp::ParameterIO, sarc};
 
         use glob::glob;
@@ -872,27 +871,7 @@ mod tests {
         use crate::ResourceSizeTable;
         let mut result: HashSet<String> = HashSet::new();
 
-        let settings_path = dirs2::data_dir()
-            .unwrap()
-            .join("ukmm")
-            .join("settings.yml");
-        let settings = Tree::parse(
-                std::fs::read_to_string(settings_path).unwrap()
-            ).unwrap();
-        let source_node = settings.root_ref()
-            .unwrap()
-            .get("wiiu_config")
-            .unwrap()
-            .get("dump")
-            .unwrap()
-            .get("source")
-            .unwrap();
-        let valid = source_node.get("type").unwrap().val().unwrap() == "Unpacked";
-        if !valid {
-            println!("Cannot extract wua dump for testing!");
-            return;
-        }
-        let update_path = PathBuf::from(source_node.get("update_dir").unwrap().val().unwrap());
+        let update_path = get_update_path();
         let rstb_path = update_path
             .join("System")
             .join("Resource")
@@ -952,10 +931,8 @@ mod tests {
 
     #[cfg(feature = "complex_testing")]
     #[test]
-    fn test_all_bdrop() {
+    fn test_all_bdmgparam() {
         use std::collections::HashSet;
-        use dirs2;
-        use ryml::Tree;
         use roead::{aamp::ParameterIO, sarc};
 
         use glob::glob;
@@ -963,29 +940,8 @@ mod tests {
         use crate::ResourceSizeTable;
         let mut result: HashSet<String> = HashSet::new();
 
-        let settings_path = dirs2::data_dir()
-            .unwrap()
-            .join("ukmm")
-            .join("settings.yml");
-        let settings = Tree::parse(
-                std::fs::read_to_string(settings_path).unwrap()
-            ).unwrap();
-        let profile_node = settings.root_ref()
-            .unwrap()
-            .get("wiiu_config")
-            .unwrap()
-            .get("profile")
-            .unwrap();
-        let profile = profile_node.val().unwrap();
-        let root = dirs2::data_local_dir()
-            .unwrap()
-            .join("ukmm")
-            .join("wiiu")
-            .join("profiles")
-            .join(profile)
-            .join("merged")
-            .join("content");
-        let rstb_path = root
+        let update_path = get_update_path();
+        let rstb_path = update_path
             .join("System")
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
@@ -993,7 +949,76 @@ mod tests {
                 std::fs::read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
-                root.join("Actor")
+                update_path.join("Actor")
+                    .join("Pack")
+                    .join("*.sbactorpack")
+                    .to_string_lossy()
+                    .as_ref()
+            ).unwrap() {
+            match entry {
+                Ok(path) => {
+                    let actorname = path.file_stem().unwrap().to_str().unwrap();
+                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    let bxml = ParameterIO::from_binary(
+                        sarc.get_data(&format!("Actor/ActorLink/{}.bxml", actorname))
+                            .unwrap(),
+                    )
+                    .unwrap();
+                    let user = bxml
+                        .param_root
+                        .objects
+                        .get("LinkTarget")
+                        .unwrap()
+                        .get("DamageParamUser")
+                        .unwrap()
+                        .as_str()
+                        .unwrap();
+                    let param_name = format!("Actor/DamageParam/{}.bdmgparam", user);
+                    if param_name.contains("Dummy") | result.contains(&param_name) {
+                        continue;
+                    }
+                    if let Some(o_file) = sarc.get_data(&param_name) {
+                        if let Some(rstb_entry) = rstable.get(param_name.as_str()) {
+                            let calc_size = super::estimate_from_bytes_and_name(
+                                o_file,
+                                &param_name,
+                                Endian::Big,
+                            )
+                            .unwrap();
+                            assert_ge!(calc_size, rstb_entry);
+                            result.insert(param_name);
+                        } else {
+                            println!("{} not in RSTB???", &param_name);
+                            continue;
+                        }
+                    }
+                }
+                Err(_) => println!("File error...?"),
+            }
+        }
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_all_bdrop() {
+        use std::collections::HashSet;
+        use roead::{aamp::ParameterIO, sarc};
+
+        use glob::glob;
+
+        use crate::ResourceSizeTable;
+        let mut result: HashSet<String> = HashSet::new();
+
+        let update_path = get_update_path();
+        let rstb_path = update_path
+            .join("System")
+            .join("Resource")
+            .join("ResourceSizeTable.product.srsizetable");
+        let rstable = ResourceSizeTable::from_binary(
+                std::fs::read(rstb_path).unwrap()
+            ).unwrap();
+        for entry in glob(
+                update_path.join("Actor")
                     .join("Pack")
                     .join("*.sbactorpack")
                     .to_string_lossy()
@@ -1046,8 +1071,6 @@ mod tests {
     #[test]
     fn test_all_bgparamlist() {
         use std::collections::HashSet;
-        use dirs2;
-        use ryml::Tree;
         use roead::{aamp::ParameterIO, sarc};
 
         use glob::glob;
@@ -1055,29 +1078,8 @@ mod tests {
         use crate::ResourceSizeTable;
         let mut result: HashSet<String> = HashSet::new();
 
-        let settings_path = dirs2::data_dir()
-            .unwrap()
-            .join("ukmm")
-            .join("settings.yml");
-        let settings = Tree::parse(
-                std::fs::read_to_string(settings_path).unwrap()
-            ).unwrap();
-        let profile_node = settings.root_ref()
-            .unwrap()
-            .get("wiiu_config")
-            .unwrap()
-            .get("profile")
-            .unwrap();
-        let profile = profile_node.val().unwrap();
-        let root = dirs2::data_local_dir()
-            .unwrap()
-            .join("ukmm")
-            .join("wiiu")
-            .join("profiles")
-            .join(profile)
-            .join("merged")
-            .join("content");
-        let rstb_path = root
+        let update_path = get_update_path();
+        let rstb_path = update_path
             .join("System")
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
@@ -1085,7 +1087,7 @@ mod tests {
                 std::fs::read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
-                root.join("Actor")
+                update_path.join("Actor")
                     .join("Pack")
                     .join("*.sbactorpack")
                     .to_string_lossy()
@@ -1138,8 +1140,6 @@ mod tests {
     #[test]
     fn test_all_bmodellist() {
         use std::collections::HashSet;
-        use dirs2;
-        use ryml::Tree;
         use roead::{aamp::ParameterIO, sarc};
 
         use glob::glob;
@@ -1147,29 +1147,8 @@ mod tests {
         use crate::ResourceSizeTable;
         let mut result: HashSet<String> = HashSet::new();
 
-        let settings_path = dirs2::data_dir()
-            .unwrap()
-            .join("ukmm")
-            .join("settings.yml");
-        let settings = Tree::parse(
-                std::fs::read_to_string(settings_path).unwrap()
-            ).unwrap();
-        let profile_node = settings.root_ref()
-            .unwrap()
-            .get("wiiu_config")
-            .unwrap()
-            .get("profile")
-            .unwrap();
-        let profile = profile_node.val().unwrap();
-        let root = dirs2::data_local_dir()
-            .unwrap()
-            .join("ukmm")
-            .join("wiiu")
-            .join("profiles")
-            .join(profile)
-            .join("merged")
-            .join("content");
-        let rstb_path = root
+        let update_path = get_update_path();
+        let rstb_path = update_path
             .join("System")
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
@@ -1177,7 +1156,7 @@ mod tests {
                 std::fs::read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
-                root.join("Actor")
+                update_path.join("Actor")
                     .join("Pack")
                     .join("*.sbactorpack")
                     .to_string_lossy()
@@ -1230,8 +1209,6 @@ mod tests {
     #[test]
     fn test_all_bphysics() {
         use std::collections::HashSet;
-        use dirs2;
-        use ryml::Tree;
         use roead::{aamp::ParameterIO, sarc};
 
         use glob::glob;
@@ -1239,29 +1216,8 @@ mod tests {
         use crate::ResourceSizeTable;
         let mut result: HashSet<String> = HashSet::new();
 
-        let settings_path = dirs2::data_dir()
-            .unwrap()
-            .join("ukmm")
-            .join("settings.yml");
-        let settings = Tree::parse(
-                std::fs::read_to_string(settings_path).unwrap()
-            ).unwrap();
-        let profile_node = settings.root_ref()
-            .unwrap()
-            .get("wiiu_config")
-            .unwrap()
-            .get("profile")
-            .unwrap();
-        let profile = profile_node.val().unwrap();
-        let root = dirs2::data_local_dir()
-            .unwrap()
-            .join("ukmm")
-            .join("wiiu")
-            .join("profiles")
-            .join(profile)
-            .join("merged")
-            .join("content");
-        let rstb_path = root
+        let update_path = get_update_path();
+        let rstb_path = update_path
             .join("System")
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
@@ -1269,7 +1225,7 @@ mod tests {
                 std::fs::read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
-                root.join("Actor")
+                update_path.join("Actor")
                     .join("Pack")
                     .join("*.sbactorpack")
                     .to_string_lossy()
@@ -1322,8 +1278,6 @@ mod tests {
     #[test]
     fn test_all_brecipe() {
         use std::collections::HashSet;
-        use dirs2;
-        use ryml::Tree;
         use roead::{aamp::ParameterIO, sarc};
 
         use glob::glob;
@@ -1331,29 +1285,8 @@ mod tests {
         use crate::ResourceSizeTable;
         let mut result: HashSet<String> = HashSet::new();
 
-        let settings_path = dirs2::data_dir()
-            .unwrap()
-            .join("ukmm")
-            .join("settings.yml");
-        let settings = Tree::parse(
-                std::fs::read_to_string(settings_path).unwrap()
-            ).unwrap();
-        let profile_node = settings.root_ref()
-            .unwrap()
-            .get("wiiu_config")
-            .unwrap()
-            .get("profile")
-            .unwrap();
-        let profile = profile_node.val().unwrap();
-        let root = dirs2::data_local_dir()
-            .unwrap()
-            .join("ukmm")
-            .join("wiiu")
-            .join("profiles")
-            .join(profile)
-            .join("merged")
-            .join("content");
-        let rstb_path = root
+        let update_path = get_update_path();
+        let rstb_path = update_path
             .join("System")
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
@@ -1361,7 +1294,7 @@ mod tests {
                 std::fs::read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
-                root.join("Actor")
+                update_path.join("Actor")
                     .join("Pack")
                     .join("*.sbactorpack")
                     .to_string_lossy()
@@ -1414,8 +1347,6 @@ mod tests {
     #[test]
     fn test_all_bshop() {
         use std::collections::HashSet;
-        use dirs2;
-        use ryml::Tree;
         use roead::{aamp::ParameterIO, sarc};
 
         use glob::glob;
@@ -1423,29 +1354,8 @@ mod tests {
         use crate::ResourceSizeTable;
         let mut result: HashSet<String> = HashSet::new();
 
-        let settings_path = dirs2::data_dir()
-            .unwrap()
-            .join("ukmm")
-            .join("settings.yml");
-        let settings = Tree::parse(
-                std::fs::read_to_string(settings_path).unwrap()
-            ).unwrap();
-        let profile_node = settings.root_ref()
-            .unwrap()
-            .get("wiiu_config")
-            .unwrap()
-            .get("profile")
-            .unwrap();
-        let profile = profile_node.val().unwrap();
-        let root = dirs2::data_local_dir()
-            .unwrap()
-            .join("ukmm")
-            .join("wiiu")
-            .join("profiles")
-            .join(profile)
-            .join("merged")
-            .join("content");
-        let rstb_path = root
+        let update_path = get_update_path();
+        let rstb_path = update_path
             .join("System")
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
@@ -1453,7 +1363,7 @@ mod tests {
                 std::fs::read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
-                root.join("Actor")
+                update_path.join("Actor")
                     .join("Pack")
                     .join("*.sbactorpack")
                     .to_string_lossy()
@@ -1506,8 +1416,6 @@ mod tests {
     #[test]
     fn test_all_bxml() {
         use std::collections::HashSet;
-        use dirs2;
-        use ryml::Tree;
 
         use glob::glob;
         use roead::sarc;
@@ -1515,29 +1423,8 @@ mod tests {
         use crate::ResourceSizeTable;
         let mut result: HashSet<String> = HashSet::new();
 
-        let settings_path = dirs2::data_dir()
-            .unwrap()
-            .join("ukmm")
-            .join("settings.yml");
-        let settings = Tree::parse(
-                std::fs::read_to_string(settings_path).unwrap()
-            ).unwrap();
-        let profile_node = settings.root_ref()
-            .unwrap()
-            .get("wiiu_config")
-            .unwrap()
-            .get("profile")
-            .unwrap();
-        let profile = profile_node.val().unwrap();
-        let root = dirs2::data_local_dir()
-            .unwrap()
-            .join("ukmm")
-            .join("wiiu")
-            .join("profiles")
-            .join(profile)
-            .join("merged")
-            .join("content");
-        let rstb_path = root
+        let update_path = get_update_path();
+        let rstb_path = update_path
             .join("System")
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
@@ -1545,7 +1432,7 @@ mod tests {
                 std::fs::read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
-                root.join("Actor")
+                update_path.join("Actor")
                     .join("Pack")
                     .join("*.sbactorpack")
                     .to_string_lossy()
@@ -1581,41 +1468,17 @@ mod tests {
 
     #[cfg(feature = "complex_testing")]
     #[test]
-    fn test_all_bxml_nx() {
+    fn test_all_bdmgparam_nx() {
         use std::collections::HashSet;
-        use dirs2;
-        use ryml::Tree;
+        use roead::{aamp::ParameterIO, sarc};
 
         use glob::glob;
-        use roead::sarc;
 
         use crate::ResourceSizeTable;
         let mut result: HashSet<String> = HashSet::new();
 
-        let settings_path = dirs2::data_dir()
-            .unwrap()
-            .join("ukmm")
-            .join("settings.yml");
-        let settings = Tree::parse(
-                std::fs::read_to_string(settings_path).unwrap()
-            ).unwrap();
-        let profile_node = settings.root_ref()
-            .unwrap()
-            .get("switch_config")
-            .unwrap()
-            .get("profile")
-            .unwrap();
-        let profile = profile_node.val().unwrap();
-        let root = dirs2::data_local_dir()
-            .unwrap()
-            .join("ukmm")
-            .join("nx")
-            .join("profiles")
-            .join(profile)
-            .join("merged")
-            .join("01007EF00011E000")
-            .join("romfs");
-        let rstb_path = root
+        let update_path = get_update_path_nx();
+        let rstb_path = update_path
             .join("System")
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
@@ -1623,7 +1486,77 @@ mod tests {
                 std::fs::read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
-                root.join("Actor")
+                update_path.join("Actor")
+                    .join("Pack")
+                    .join("*.sbactorpack")
+                    .to_string_lossy()
+                    .as_ref()
+            ).unwrap() {
+            match entry {
+                Ok(path) => {
+                    let actorname = path.file_stem().unwrap().to_str().unwrap();
+                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    let bxml = ParameterIO::from_binary(
+                        sarc.get_data(&format!("Actor/ActorLink/{}.bxml", actorname))
+                            .unwrap(),
+                    )
+                    .unwrap();
+                    let user = bxml
+                        .param_root
+                        .objects
+                        .get("LinkTarget")
+                        .unwrap()
+                        .get("DamageParamUser")
+                        .unwrap()
+                        .as_str()
+                        .unwrap();
+                    let param_name = format!("Actor/DamageParam/{}.bdmgparam", user);
+                    if param_name.contains("Dummy") | result.contains(&param_name) {
+                        continue;
+                    }
+                    if let Some(o_file) = sarc.get_data(&param_name) {
+                        if let Some(rstb_entry) = rstable.get(param_name.as_str()) {
+                            let calc_size = super::estimate_from_bytes_and_name(
+                                o_file,
+                                &param_name,
+                                Endian::Little,
+                            )
+                            .unwrap();
+                            assert_ge!(calc_size, rstb_entry);
+                            result.insert(param_name);
+                        } else {
+                            println!("{} not in RSTB???", &param_name);
+                            continue;
+                        }
+                    }
+                }
+                Err(_) => println!("File error...?"),
+            }
+        }
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_all_bxml_nx() {
+        use std::collections::HashSet;
+
+        use glob::glob;
+        use roead::sarc;
+
+        use crate::ResourceSizeTable;
+        let mut result: HashSet<String> = HashSet::new();
+        let mut biggest_diff: u32 = 0;
+
+        let update_path = get_update_path_nx();
+        let rstb_path = update_path
+            .join("System")
+            .join("Resource")
+            .join("ResourceSizeTable.product.srsizetable");
+        let rstable = ResourceSizeTable::from_binary(
+                std::fs::read(rstb_path).unwrap()
+            ).unwrap();
+        for entry in glob(
+                update_path.join("Actor")
                     .join("Pack")
                     .join("*.sbactorpack")
                     .to_string_lossy()
@@ -1645,7 +1578,10 @@ mod tests {
                             Endian::Little,
                         )
                         .unwrap();
-                        println!("{} - vanilla: {} calc: {}", actorname, rstb_entry, calc_size);
+                        //println!("{} - vanilla: {} calc: {}", actorname, rstb_entry, calc_size);
+                        if rstb_entry - calc_size > biggest_diff {
+                            biggest_diff = rstb_entry - calc_size;
+                        }
                         //assert_ge!(calc_size, rstb_entry);
                         result.insert(param_name);
                     } else {
@@ -1656,6 +1592,7 @@ mod tests {
                 Err(_) => println!("File error...?"),
             }
         }
+        println!("{}", biggest_diff);
     }
 
     #[cfg(feature = "complex_testing")]
