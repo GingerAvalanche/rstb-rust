@@ -61,9 +61,7 @@ mod info;
 use std::path::Path;
 
 #[cfg(feature = "complex")]
-use cpp_memsizes::{
-    baiprog, baslist, bdrop, bgparamlist, bmodellist, bphysics, brecipe, bshop, bxml,
-};
+use cpp_memsizes::*;
 use info::{get_factory_info, ParseSize};
 
 use crate::{Endian, Result};
@@ -310,6 +308,8 @@ fn calc_or_estimate_from_bytes_and_name(
                         }
                         #[cfg(feature = "complex")]
                         "baslist" => Some(rounded + baslist::parse_size(bytes, endian)?),
+                        #[cfg(feature = "complex")]
+                        "bchemical" => Some(rounded + bchemical::parse_size(bytes, endian)?),
                         #[cfg(feature = "complex")]
                         "bdrop" => Some(rounded + bdrop::parse_size(bytes, endian)?),
                         "bfres" => Some(estimate_bfres(filesize, endian)),
@@ -834,6 +834,98 @@ mod tests {
                         .as_str()
                         .unwrap();
                     let param_name = format!("Actor/ASList/{}.baslist", user);
+                    if param_name.contains("Dummy") | result.contains(&param_name) {
+                        continue;
+                    }
+                    if let Some(o_file) = sarc.get_data(&param_name) {
+                        if let Some(rstb_entry) = rstable.get(param_name.as_str()) {
+                            let calc_size = super::estimate_from_bytes_and_name(
+                                o_file,
+                                &param_name,
+                                Endian::Big,
+                            )
+                            .unwrap();
+                            assert_ge!(calc_size, rstb_entry);
+                            result.insert(param_name);
+                        } else {
+                            println!("{} not in RSTB???", &param_name);
+                            continue;
+                        }
+                    }
+                }
+                Err(_) => println!("File error...?"),
+            }
+        }
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_all_bchemical() {
+        use std::collections::HashSet;
+        use dirs2;
+        use ryml::Tree;
+        use roead::{aamp::ParameterIO, sarc};
+
+        use glob::glob;
+
+        use crate::ResourceSizeTable;
+        let mut result: HashSet<String> = HashSet::new();
+
+        let settings_path = dirs2::data_dir()
+            .unwrap()
+            .join("ukmm")
+            .join("settings.yml");
+        let settings = Tree::parse(
+                std::fs::read_to_string(settings_path).unwrap()
+            ).unwrap();
+        let profile_node = settings.root_ref()
+            .unwrap()
+            .get("wiiu_config")
+            .unwrap()
+            .get("profile")
+            .unwrap();
+        let profile = profile_node.val().unwrap();
+        let root = dirs2::data_local_dir()
+            .unwrap()
+            .join("ukmm")
+            .join("wiiu")
+            .join("profiles")
+            .join(profile)
+            .join("merged")
+            .join("content");
+        let rstb_path = root
+            .join("System")
+            .join("Resource")
+            .join("ResourceSizeTable.product.srsizetable");
+        let rstable = ResourceSizeTable::from_binary(
+                std::fs::read(rstb_path).unwrap()
+            ).unwrap();
+        for entry in glob(
+                root.join("Actor")
+                    .join("Pack")
+                    .join("*.sbactorpack")
+                    .to_string_lossy()
+                    .as_ref()
+            ).unwrap() {
+            match entry {
+                Ok(path) => {
+                    let actorname = path.file_stem().unwrap().to_str().unwrap();
+                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    let bxml = ParameterIO::from_binary(
+                        sarc.get_data(&format!("Actor/ActorLink/{}.bxml", actorname))
+                            .unwrap(),
+                    )
+                    .unwrap();
+                    let user = bxml
+                        .param_root
+                        .objects
+                        .get("LinkTarget")
+                        .unwrap()
+                        .get("ChemicalUser")
+                        .unwrap()
+                        .as_str()
+                        .unwrap();
+                    let param_name = format!("Actor/Chemical/{}.bchemical", user);
                     if param_name.contains("Dummy") | result.contains(&param_name) {
                         continue;
                     }

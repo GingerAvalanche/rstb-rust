@@ -30,7 +30,7 @@ pub struct ParameterList<T> {
 }
 
 #[repr(C)]
-struct IParameterObj<T> {
+pub struct IParameterObj<T> {
     vfptr:          T,      // vtable*
     mParamListHead: T,      // ParameterBase*
     mParamListTail: T,      // ParameterBase*

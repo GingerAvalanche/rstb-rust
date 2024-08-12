@@ -4,6 +4,7 @@
 pub mod ActorLink;
 pub mod AIProgram;
 pub mod ASList;
+pub mod Chemical;
 pub mod DropTable;
 pub mod GParamList;
 pub mod ModelList;
@@ -161,6 +162,18 @@ mod tests {
         assert_eq!(std::mem::size_of::<ASList::Common<u64>>(), 0x50);
         assert_eq!(std::mem::size_of::<ASList::ASList<u32>>(), 0x2F4);
         assert_eq!(std::mem::size_of::<ASList::ASList<u64>>(), 0x410);
+    }
+
+    #[test]
+    fn chemical_size_tests() {
+        assert_eq!(std::mem::size_of::<Chemical::Rigid<u32>>(), 0x10C);
+        assert_eq!(std::mem::size_of::<Chemical::Rigid<u64>>(), 0x190);
+        assert_eq!(std::mem::size_of::<Chemical::Shape<u32>>(), 0x240);
+        assert_eq!(std::mem::size_of::<Chemical::Shape<u64>>(), 0x2F0);
+        assert_eq!(std::mem::size_of::<Chemical::Root<u32>>(), 0x8C);
+        assert_eq!(std::mem::size_of::<Chemical::Root<u64>>(), 0x110);
+        assert_eq!(std::mem::size_of::<Chemical::Chemical<u32>>(), 0x2CC);
+        assert_eq!(std::mem::size_of::<Chemical::Chemical<u64>>(), 0x3C0);
     }
 
     #[test]
