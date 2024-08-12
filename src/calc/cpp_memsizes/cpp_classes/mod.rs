@@ -11,6 +11,7 @@ pub mod ModelList;
 pub mod Physics;
 pub mod Recipe;
 pub mod ShopData;
+pub mod SupportBone;
 pub mod agl;
 pub mod sead;
 
@@ -442,5 +443,27 @@ mod tests {
         assert_eq!(std::mem::size_of::<ShopData::Table<u64>>(), 0x88);
         assert_eq!(std::mem::size_of::<ShopData::Shop<u32>>(), 0x27C);
         assert_eq!(std::mem::size_of::<ShopData::Shop<u64>>(), 0x320);
+    }
+
+    #[test]
+    fn supportbone_size_tests() {
+        assert_eq!(std::mem::size_of::<SupportBone::Bone<u32>>(), 0x74);
+        assert_eq!(std::mem::size_of::<SupportBone::Bone<u64>>(), 0xA0);
+        assert_eq!(std::mem::size_of::<SupportBone::ConnectionLinear<u32>>(), 0x40);
+        assert_eq!(std::mem::size_of::<SupportBone::ConnectionLinear<u64>>(), 0x70);
+        assert_eq!(std::mem::size_of::<SupportBone::ConnectionCurve<u32>>(), 0xA0);
+        assert_eq!(std::mem::size_of::<SupportBone::ConnectionCurve<u64>>(), 0x108);
+        assert_eq!(std::mem::size_of::<SupportBone::OutputSingle<u32>>(), 0x3C);
+        assert_eq!(std::mem::size_of::<SupportBone::OutputSingle<u64>>(), 0x70);
+        assert_eq!(std::mem::size_of::<SupportBone::OutputDouble<u32>>(), 0x5C);
+        assert_eq!(std::mem::size_of::<SupportBone::OutputDouble<u64>>(), 0xB0);
+        assert_eq!(std::mem::size_of::<SupportBone::BaseBone<u32>>(), 0xBC);
+        assert_eq!(std::mem::size_of::<SupportBone::BaseBone<u64>>(), 0x130);
+        assert_eq!(std::mem::size_of::<SupportBone::MainBone<u32>>(), 0xBC);
+        assert_eq!(std::mem::size_of::<SupportBone::MainBone<u64>>(), 0x130);
+        assert_eq!(std::mem::size_of::<SupportBone::SupportBone<u32>>(), 0x11C);
+        assert_eq!(std::mem::size_of::<SupportBone::SupportBone<u64>>(), 0x1F0);
+        assert_eq!(std::mem::size_of::<SupportBone::SupportBoneResource<u32>>(), 0x384);
+        assert_eq!(std::mem::size_of::<SupportBone::SupportBoneResource<u64>>(), 0x5B0);
     }
 }

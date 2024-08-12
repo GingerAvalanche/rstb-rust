@@ -5,6 +5,7 @@ pub mod bdrop;
 pub mod bgparamlist;
 pub mod bmodellist;
 pub mod bphysics;
+pub mod bphyssb;
 pub mod brecipe;
 pub mod bshop;
 pub mod bxml;

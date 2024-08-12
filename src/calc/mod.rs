@@ -309,6 +309,8 @@ fn calc_or_estimate_from_bytes_and_name(
                         #[cfg(feature = "complex")]
                         "bphysics" => Some(rounded + bphysics::parse_size(bytes, endian)?),
                         #[cfg(feature = "complex")]
+                        "bphyssb" => Some(rounded + bphyssb::parse_size(bytes, endian)?),
+                        #[cfg(feature = "complex")]
                         "brecipe" => Some(rounded + brecipe::parse_size(bytes, endian)?),
                         #[cfg(feature = "complex")]
                         "bshop" => Some(rounded + bshop::parse_size(bytes, endian)?),
@@ -1265,6 +1267,96 @@ mod tests {
 
     #[cfg(feature = "complex_testing")]
     #[test]
+    fn test_all_bphyssb() {
+        use std::collections::HashSet;
+        use roead::{aamp::ParameterIO, sarc};
+
+        use glob::glob;
+
+        use crate::ResourceSizeTable;
+        let mut result: HashSet<String> = HashSet::new();
+
+        let update_path = get_update_path();
+        let rstb_path = update_path
+            .join("System")
+            .join("Resource")
+            .join("ResourceSizeTable.product.srsizetable");
+        let rstable = ResourceSizeTable::from_binary(
+                std::fs::read(rstb_path).unwrap()
+            ).unwrap();
+        for entry in glob(
+                update_path.join("Actor")
+                    .join("Pack")
+                    .join("*.sbactorpack")
+                    .to_string_lossy()
+                    .as_ref()
+            ).unwrap() {
+            match entry {
+                Ok(path) => {
+                    let actorname = path.file_stem().unwrap().to_str().unwrap();
+                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    let bxml = ParameterIO::from_binary(
+                        sarc.get_data(&format!("Actor/ActorLink/{}.bxml", actorname))
+                            .unwrap(),
+                    )
+                    .unwrap();
+                    let user = bxml
+                        .param_root
+                        .objects
+                        .get("LinkTarget")
+                        .unwrap()
+                        .get("PhysicsUser")
+                        .unwrap()
+                        .as_str()
+                        .unwrap();
+                    if user == "Dummy" {
+                        continue;
+                    }
+                    let bphysics = ParameterIO::from_binary(
+                        sarc.get_data(&format!("Actor/Physics/{}.bphysics", user))
+                            .unwrap()
+                    )
+                    .unwrap();
+                    if let Some(paramset) = bphysics.param_root.lists.get("ParamSet") {
+                        if let Some(paramsetheader) = paramset.objects.get("ParamSetHeader") {
+                            if paramsetheader.get("use_support_bone").unwrap().as_bool().unwrap() {
+                                let support_bone_path = paramset.objects
+                                    .get("SupportBone")
+                                    .unwrap()
+                                    .get("support_bone_setup_file_path")
+                                    .unwrap()
+                                    .as_string256()
+                                    .unwrap();
+                                let param_name = format!("Physics/SupportBone/{}", support_bone_path);
+                                if result.contains(&param_name) {
+                                    continue;
+                                }
+                                if let Some(o_file) = sarc.get_data(&param_name) {
+                                    if let Some(rstb_entry) = rstable.get(param_name.as_str()) {
+                                        let calc_size = super::estimate_from_bytes_and_name(
+                                            o_file,
+                                            &param_name,
+                                            Endian::Big,
+                                        )
+                                        .unwrap();
+                                        assert_ge!(calc_size, rstb_entry);
+                                        result.insert(param_name);
+                                    } else {
+                                        println!("{} not in RSTB???", &param_name);
+                                        continue;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                Err(_) => println!("File error...?"),
+            }
+        }
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
     fn test_all_brecipe() {
         use std::collections::HashSet;
         use roead::{aamp::ParameterIO, sarc};
@@ -1678,10 +1770,13 @@ mod tests {
                             match Path::new(s_name).extension().unwrap().to_str().unwrap() {
                                 "baiprog"
                                 | "baslist"
+                                | "bchemical"
+                                | "bdmgparam"
                                 | "bdrop"
                                 | "bgparamlist"
                                 | "bmodellist"
                                 | "bphysics"
+                                | "bphyssb"
                                 | "brecipe"
                                 | "bshop"
                                 | "bxml"
@@ -1763,10 +1858,13 @@ mod tests {
                         match Path::new(s_name).extension().unwrap().to_str().unwrap() {
                             "baiprog"
                             | "baslist"
+                            | "bchemical"
+                            | "bdmgparam"
                             | "bdrop"
                             | "bgparamlist"
                             | "bmodellist"
                             | "bphysics"
+                            | "bphyssb"
                             | "brecipe"
                             | "bshop"
                             | "bxml"

@@ -106,37 +106,66 @@ struct LifeCheckable/*<T>*/ {
 }
 
 #[repr(C)]
+pub struct BaseVector2<U> {
+    x:  U,
+    y:  U,
+}
+
+#[repr(C)]
+pub struct BaseVector3<U> {
+    x:  U,
+    y:  U,
+    z:  U,
+}
+
+#[repr(C)]
+pub struct BaseVector4<U> {
+    x:  U,
+    y:  U,
+    z:  U,
+    w:  U,
+}
+
+#[repr(C)]
+pub struct BaseColor3<U> {
+    r:  U,
+    g:  U,
+    b:  U,
+}
+
+#[repr(C)]
+pub struct BaseColor4<U> {
+    r:  U,
+    g:  U,
+    b:  U,
+}
+
+#[repr(C)]
 pub struct Color3f {
-    r: f32,
-    g: f32,
-    b: f32,
+    base:   BaseColor3<f32>,
 }
 
 #[repr(C)]
 pub struct Color4f {
-    r: f32,
-    g: f32,
-    b: f32,
-    a: f32,
+    base:   BaseColor4<f32>,
 }
 
 #[repr(C)]
 pub struct Vector2f {
-    x: f32,
-    y: f32,
+    base:   BaseVector2<f32>
 }
 
 #[repr(C)]
 pub struct Vector3f {
-    x: f32,
-    y: f32,
-    z: f32,
+    base:   BaseVector3<f32>
 }
 
 #[repr(C)]
 pub struct Vector4f {
-    x: f32,
-    y: f32,
-    z: f32,
-    w: f32,
+    base: BaseVector4<f32>
+}
+
+#[repr(C)]
+pub struct Quatf {
+    base: BaseVector4<f32>
 }
