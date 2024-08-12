@@ -262,12 +262,7 @@ fn calc_or_estimate_from_bytes_and_name(
                                 "beventpack" => 0xe0,
                                 "bfevfl" => 0x58,
                                 "hkrb" => 40,
-                                "bdmgparam" => {
-                                    let rounded = rounded as f32;
-                                    return Some(
-                                        ((((-0.0018 * rounded) + 6.6273) * rounded) + 500.0) as u32,
-                                    );
-                                }
+                                "bdmgparam" => 0x6c,
                                 _ => 0,
                             }
                     }
@@ -277,13 +272,7 @@ fn calc_or_estimate_from_bytes_and_name(
                             + size
                             + parse_size
                             + match ext {
-                                "bdmgparam" => {
-                                    let rounded = rounded as f32;
-                                    return Some(
-                                        (((((-0.0018 * rounded) + 6.6273) * rounded) + 500.0) * 1.5)
-                                            as u32,
-                                    );
-                                }
+                                "bdmgparam" => 0x6c,
                                 _ => 0,
                             }
                     }
