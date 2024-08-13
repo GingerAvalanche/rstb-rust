@@ -3,6 +3,7 @@
 
 pub mod ActorLink;
 pub mod AIProgram;
+pub mod AnimationInfo;
 pub mod ASList;
 pub mod Chemical;
 pub mod DropTable;
@@ -145,6 +146,18 @@ mod tests {
         assert_eq!(std::mem::size_of::<AIProgram::QueryDef<u64>>(), 0x98);
         assert_eq!(std::mem::size_of::<AIProgram::AIProgram<u32>>(), 0x310);
         assert_eq!(std::mem::size_of::<AIProgram::AIProgram<u64>>(), 0x448);
+    }
+
+    #[test]
+    fn animinfo_size_tests() {
+        assert_eq!(std::mem::size_of::<AnimationInfo::Anim<u32>>(), 0x18);
+        assert_eq!(std::mem::size_of::<AnimationInfo::Anim<u64>>(), 0x20);
+        assert_eq!(std::mem::size_of::<AnimationInfo::SwordBlur<u32>>(), 0x20);
+        assert_eq!(std::mem::size_of::<AnimationInfo::SwordBlur<u64>>(), 0x30);
+        assert_eq!(std::mem::size_of::<AnimationInfo::SwordBlurInfo<u32>>(), 0xC);
+        assert_eq!(std::mem::size_of::<AnimationInfo::SwordBlurInfo<u64>>(), 0x18);
+        assert_eq!(std::mem::size_of::<AnimationInfo::AnimInfo<u32>>(), 0x24C);
+        assert_eq!(std::mem::size_of::<AnimationInfo::AnimInfo<u64>>(), 0x2C8);
     }
 
     #[test]

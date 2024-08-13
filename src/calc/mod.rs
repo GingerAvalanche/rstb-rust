@@ -283,6 +283,9 @@ fn calc_or_estimate_from_bytes_and_name(
                     match ext {
                         #[cfg(feature = "complex")]
                         "baiprog" => Some(rounded + baiprog::parse_size(bytes, endian)?),
+                        #[cfg(feature = "complex")]
+                        "baniminfo" => Some(rounded + baniminfo::parse_size(bytes, endian)?),
+                        #[cfg(not(feature = "complex"))]
                         "baniminfo" => {
                             Some(
                                 ((rounded as f32 * (if filesize > 36864 { 1.5 } else { 4.0 }))
@@ -758,6 +761,75 @@ mod tests {
                         .as_str()
                         .unwrap();
                     let param_name = format!("Actor/AIProgram/{}.baiprog", user);
+                    if param_name.contains("Dummy") | result.contains(&param_name) {
+                        continue;
+                    }
+                    if let Some(o_file) = sarc.get_data(&param_name) {
+                        if let Some(rstb_entry) = rstable.get(param_name.as_str()) {
+                            let calc_size = super::estimate_from_bytes_and_name(
+                                o_file,
+                                &param_name,
+                                Endian::Big,
+                            )
+                            .unwrap();
+                            assert_ge!(calc_size, rstb_entry);
+                            result.insert(param_name);
+                        } else {
+                            println!("{} not in RSTB???", &param_name);
+                            continue;
+                        }
+                    }
+                }
+                Err(_) => println!("File error...?"),
+            }
+        }
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_all_baniminfo() {
+        use std::collections::HashSet;
+        use roead::{aamp::ParameterIO, sarc};
+
+        use glob::glob;
+
+        use crate::ResourceSizeTable;
+        let mut result: HashSet<String> = HashSet::new();
+
+        let update_path = get_update_path();
+        let rstb_path = update_path
+            .join("System")
+            .join("Resource")
+            .join("ResourceSizeTable.product.srsizetable");
+        let rstable = ResourceSizeTable::from_binary(
+                std::fs::read(rstb_path).unwrap()
+            ).unwrap();
+        for entry in glob(
+                update_path.join("Actor")
+                    .join("Pack")
+                    .join("*.sbactorpack")
+                    .to_string_lossy()
+                    .as_ref()
+            ).unwrap() {
+            match entry {
+                Ok(path) => {
+                    let actorname = path.file_stem().unwrap().to_str().unwrap();
+                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    let bxml = ParameterIO::from_binary(
+                        sarc.get_data(&format!("Actor/ActorLink/{}.bxml", actorname))
+                            .unwrap(),
+                    )
+                    .unwrap();
+                    let user = bxml
+                        .param_root
+                        .objects
+                        .get("LinkTarget")
+                        .unwrap()
+                        .get("AnimationInfo")
+                        .unwrap()
+                        .as_str()
+                        .unwrap();
+                    let param_name = format!("Actor/AnimationInfo/{}.baniminfo", user);
                     if param_name.contains("Dummy") | result.contains(&param_name) {
                         continue;
                     }

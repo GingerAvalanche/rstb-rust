@@ -1,4 +1,5 @@
 pub mod baiprog;
+pub mod baniminfo;
 pub mod baslist;
 pub mod bchemical;
 pub mod bdrop;

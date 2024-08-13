@@ -169,3 +169,43 @@ pub struct Vector4f {
 pub struct Quatf {
     base: BaseVector4<f32>
 }
+
+#[repr(C)]
+pub struct BaseMtx22<T> {
+    v:  [[T; 2]; 2]
+}
+
+#[repr(C)]
+pub struct BaseMtx33<T> {
+    v:  [[T; 3]; 3]
+}
+
+#[repr(C)]
+pub struct BaseMtx34<T> {
+    v:  [[T; 3]; 4]
+}
+
+#[repr(C)]
+pub struct BaseMtx44<T> {
+    v:  [[T; 4]; 4]
+}
+
+#[repr(C)]
+pub struct Matrix22f {
+    base:   BaseMtx22<f32>
+}
+
+#[repr(C)]
+pub struct Matrix33f {
+    base:   BaseMtx33<f32>
+}
+
+#[repr(C)]
+pub struct Matrix34f {
+    base:   BaseMtx34<f32>
+}
+
+#[repr(C)]
+pub struct Matrix44f {
+    base:   BaseMtx44<f32>
+}
