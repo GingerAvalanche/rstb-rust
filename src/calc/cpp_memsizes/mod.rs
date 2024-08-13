@@ -4,6 +4,7 @@ pub mod baslist;
 pub mod bchemical;
 pub mod bdrop;
 pub mod bgparamlist;
+pub mod blifecondition;
 pub mod bmodellist;
 pub mod bphysics;
 pub mod bphyssb;

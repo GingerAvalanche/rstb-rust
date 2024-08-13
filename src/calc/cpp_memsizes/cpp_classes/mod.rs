@@ -8,6 +8,7 @@ pub mod ASList;
 pub mod Chemical;
 pub mod DropTable;
 pub mod GParamList;
+pub mod LifeCondition;
 pub mod ModelList;
 pub mod Physics;
 pub mod Recipe;
@@ -370,6 +371,12 @@ mod tests {
         assert_eq!(std::mem::size_of::<GParamList::RoutePoints<u64>>(), 0x3008);
         assert_eq!(std::mem::size_of::<GParamList::GParamList<u32>>(), 0x248);
         assert_eq!(std::mem::size_of::<GParamList::GParamList<u64>>(), 0x2C0);
+    }
+
+    #[test]
+    fn lifecondition_size_tests() {
+        assert_eq!(std::mem::size_of::<LifeCondition::LifeCondition<u32>>(), 0x364);
+        assert_eq!(std::mem::size_of::<LifeCondition::LifeCondition<u64>>(), 0x4B0);
     }
 
     #[test]
