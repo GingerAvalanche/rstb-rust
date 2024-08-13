@@ -8,7 +8,7 @@ use crate::Endian;
 const CLASS_SIZE_WIIU: usize = size_of::<SupportBoneResource<u32>>();
 const CLASS_SIZE_NX: usize = size_of::<SupportBoneResource<u64>>();
 
-const OVERHEAD_WIIU: usize = 0x8;
+const OVERHEAD_WIIU: usize = 0x98;
 
 pub fn parse_size(bytes: &[u8], endian: Endian) -> Option<u32> {
     let mut total_size = match endian {
@@ -31,11 +31,11 @@ pub fn parse_size(bytes: &[u8], endian: Endian) -> Option<u32> {
         Endian::Big => {
             bone_size = size_of::<Bone<u32>>();
             connection_linear_size = size_of::<ConnectionLinear<u32>>();
-            connection_curve_size = size_of::<ConnectionCurve<u32>>() + 0x30;
-            output_single_size = size_of::<OutputSingle<u32>>() + 0x30;
+            connection_curve_size = size_of::<ConnectionCurve<u32>>();
+            output_single_size = size_of::<OutputSingle<u32>>();
             output_double_size = size_of::<OutputDouble<u32>>();
-            main_bone_size = size_of::<MainBone<u32>>() + 0x10;
-            support_bone_size = size_of::<SupportBone<u32>>() + 0x10;
+            main_bone_size = size_of::<MainBone<u32>>();
+            support_bone_size = size_of::<SupportBone<u32>>();
         }
         Endian::Little => {
             bone_size = size_of::<Bone<u64>>();
