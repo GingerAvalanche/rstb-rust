@@ -134,23 +134,23 @@ fn parse_defparams(obj: &ParameterObject, size: &mut usize, endian: Endian) {
         for (_, p) in obj.iter() {
             if p.as_bool().is_ok() {
                 *size += match endian {
-                    Endian::Big => size_of::<Parameter<u32, Bool32>>(),
-                    Endian::Little => size_of::<Parameter<u64, Bool32>>(),
+                    Endian::Big => size_of::<Parameter<u32, bool>>(),
+                    Endian::Little => size_of::<Parameter<u64, bool>>(),
                 };
             } else if p.as_u32().is_ok() {
                 *size += match endian {
-                    Endian::Big => size_of::<Parameter<u32, U32>>(),
-                    Endian::Little => size_of::<Parameter<u64, U32>>(),
+                    Endian::Big => size_of::<Parameter<u32, u32>>(),
+                    Endian::Little => size_of::<Parameter<u64, u32>>(),
                 };
             } else if p.as_i32().is_ok() {
                 *size += match endian {
-                    Endian::Big => size_of::<Parameter<u32, S32>>(),
-                    Endian::Little => size_of::<Parameter<u64, S32>>(),
+                    Endian::Big => size_of::<Parameter<u32, i32>>(),
+                    Endian::Little => size_of::<Parameter<u64, i32>>(),
                 };
             } else if p.as_f32().is_ok() {
                 *size += match endian {
-                    Endian::Big => size_of::<Parameter<u32, F32>>(),
-                    Endian::Little => size_of::<Parameter<u64, F32>>(),
+                    Endian::Big => size_of::<Parameter<u32, f32>>(),
+                    Endian::Little => size_of::<Parameter<u64, f32>>(),
                 };
             } else if p.as_str().is_ok() {
                 *size += match endian {
