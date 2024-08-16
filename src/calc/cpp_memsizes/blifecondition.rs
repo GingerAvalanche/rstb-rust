@@ -7,11 +7,12 @@ const CLASS_SIZE_WIIU: usize = std::mem::size_of::<LifeCondition<u32>>();
 const CLASS_SIZE_NX: usize = std::mem::size_of::<LifeCondition<u64>>();
 
 const OVERHEAD_WIIU: usize = 0x88;
+const OVERHEAD_NX: usize = 0x0;
 
 pub fn parse_size(bytes: &[u8], endian: Endian) -> Option<u32> {
     let mut total_size: usize = match endian {
         Endian::Big => super::PARSE_CONST_WIIU + CLASS_SIZE_WIIU + OVERHEAD_WIIU,
-        Endian::Little => super::PARSE_CONST_NX + CLASS_SIZE_NX,
+        Endian::Little => super::PARSE_CONST_NX + CLASS_SIZE_NX + OVERHEAD_NX,
     };
     let safestring_size = match endian {
         Endian::Big => size_of::<agl::Parameter<u32, sead::SafeString<u32>>>() + 0x2,

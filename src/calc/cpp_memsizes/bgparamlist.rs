@@ -10,6 +10,7 @@ const CLASS_SIZE_WIIU: usize = size_of::<GParamList<u32>>();
 const CLASS_SIZE_NX: usize = size_of::<GParamList<u64>>();
 
 const OVERHEAD_WIIU: usize = 0x318;
+const OVERHEAD_NX: usize = 0x0;
 
 static OBJ_SIZES_WIIU: Map<&'static str, usize> = phf_map! {
     "AirWall" => size_of::<GParamListObjectAirWall<u32>>(),
@@ -177,7 +178,7 @@ static OBJ_SIZES_NX: Map<&'static str, usize> = phf_map! {
 pub fn parse_size(bytes: &[u8], endian: Endian) -> Option<u32> {
     let mut total_size = match endian {
         Endian::Big => super::PARSE_CONST_WIIU + CLASS_SIZE_WIIU + OVERHEAD_WIIU,
-        Endian::Little => super::PARSE_CONST_NX + CLASS_SIZE_NX,
+        Endian::Little => super::PARSE_CONST_NX + CLASS_SIZE_NX + OVERHEAD_NX,
     };
 
     let a = ParameterIO::from_binary(bytes).ok()?;
