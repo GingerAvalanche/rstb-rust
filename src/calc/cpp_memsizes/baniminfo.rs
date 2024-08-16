@@ -8,7 +8,7 @@ use crate::Endian;
 const CLASS_SIZE_WIIU: usize = size_of::<AnimInfo<u32>>();
 const CLASS_SIZE_NX: usize = size_of::<AnimInfo<u64>>();
 
-const OVERHEAD_WIIU: usize = 0x2E4;
+const OVERHEAD_WIIU: usize = 0x414;
 
 pub fn parse_size(bytes: &[u8], endian: Endian) -> Option<u32> {
     let mut total_size = match endian {

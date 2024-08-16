@@ -27,8 +27,7 @@ pub struct FixedSafeString<T, const L: usize> {
 
 #[repr(C)]
 pub struct SafeString<T> {
-    ptr: T,
-    v:   [u8; 8],
+    v: SafeStringBase<T>,
 }
 
 #[repr(C)]

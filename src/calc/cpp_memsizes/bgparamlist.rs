@@ -6,10 +6,10 @@ use roead::aamp::ParameterIO;
 use super::cpp_classes::GParamList::*;
 use crate::Endian;
 
-const CLASS_SIZE_WIIU: usize = 0x248;
-const CLASS_SIZE_NX: usize = 0x2c0;
+const CLASS_SIZE_WIIU: usize = size_of::<GParamList<u32>>();
+const CLASS_SIZE_NX: usize = size_of::<GParamList<u64>>();
 
-const OVERHEAD_WIIU: usize = 0x290;
+const OVERHEAD_WIIU: usize = 0x318;
 
 static OBJ_SIZES_WIIU: Map<&'static str, usize> = phf_map! {
     "AirWall" => size_of::<GParamListObjectAirWall<u32>>(),

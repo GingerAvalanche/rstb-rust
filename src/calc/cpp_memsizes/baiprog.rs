@@ -2,15 +2,13 @@ use std::mem::size_of;
 
 use roead::aamp::{ParameterIO, ParameterList, ParameterObject};
 
-use super::cpp_classes::{
-    agl::Parameter, AIProgram::*, Bool32, sead, F32, S32, U32,
-};
+use super::cpp_classes::{agl::Parameter, AIProgram::*, sead};
 use crate::Endian;
 
 const CLASS_SIZE_WIIU: usize = std::mem::size_of::<AIProgram<u32>>();
 const CLASS_SIZE_NX: usize = std::mem::size_of::<AIProgram<u64>>();
 
-const OVERHEAD_WIIU: usize = 0xE2;
+const OVERHEAD_WIIU: usize = 0xE6;
 
 pub fn parse_size(bytes: &[u8], endian: Endian) -> Option<u32> {
     let mut total_size = match endian {

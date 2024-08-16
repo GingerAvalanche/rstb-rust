@@ -773,8 +773,7 @@ mod tests {
                                 Endian::Big,
                             )
                             .unwrap();
-                            println!("{}//{}: {}", path.to_string_lossy(), param_name, calc_size as i32 - rstb_entry as i32);
-                            //assert_ge!(calc_size, rstb_entry);
+                            assert_ge!(calc_size, rstb_entry);
                             result.insert(param_name);
                         } else {
                             println!("{} not in RSTB???", &param_name);

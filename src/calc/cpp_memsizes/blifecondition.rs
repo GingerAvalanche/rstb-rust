@@ -6,7 +6,7 @@ use super::cpp_classes::{agl, sead, LifeCondition::LifeCondition};
 const CLASS_SIZE_WIIU: usize = std::mem::size_of::<LifeCondition<u32>>();
 const CLASS_SIZE_NX: usize = std::mem::size_of::<LifeCondition<u64>>();
 
-const OVERHEAD_WIIU: usize = 0x58;
+const OVERHEAD_WIIU: usize = 0x88;
 
 pub fn parse_size(bytes: &[u8], endian: Endian) -> Option<u32> {
     let mut total_size: usize = match endian {

@@ -12,8 +12,7 @@ use crate::Endian;
 const CLASS_SIZE_WIIU: usize = std::mem::size_of::<Physics<u32>>();
 const CLASS_SIZE_NX: usize = std::mem::size_of::<Physics<u64>>();
 
-//const OVERHEAD_WIIU: usize = 0xD4; // Might be necessary for mod files?
-const OVERHEAD_WIIU: usize = 0x68;
+const OVERHEAD_WIIU: usize = 0x978;
 
 pub fn parse_size(bytes: &[u8], endian: Endian) -> Option<u32> {
     let mut total_size = match endian {
@@ -49,17 +48,17 @@ pub fn parse_size(bytes: &[u8], endian: Endian) -> Option<u32> {
         Endian::Big => {
             rigidbodysetparam_size = size_of::<RigidBodySetParam<u32>>();
             rigidbodyparam_size = size_of::<RigidBodyParam<u32>>();
-            shapeparamobj_size = size_of::<ShapeParamObj<u32>>() + 0x30;
+            shapeparamobj_size = size_of::<ShapeParamObj<u32>>();
             vertex_size = size_of::<Parameter<u32, sead::Vector3f>>();
             charactercontrollerparam_size =
-                size_of::<CharacterControllerParam<u32>>() + 0x20;
-            form_size = size_of::<Form<u32>>() + 0x30;
+                size_of::<CharacterControllerParam<u32>>();
+            form_size = size_of::<Form<u32>>();
             ragdollparam_size = size_of::<RagdollParam<u32>>();
-            contactinfoparam_size = size_of::<ContactInfoParam<u32>>() + 0x10;
-            contactpointinfoparam_size = size_of::<ContactPointInfoParam<u32>>() + 0x10;
-            collisioninfoparam_size = size_of::<CollisionInfoParam<u32>>() + 0x10;
-            clothsetparam_size = size_of::<ClothSetParam<u32>>() + 0x20;
-            clothparam_size = size_of::<ClothParam<u32>>() + 0x10;
+            contactinfoparam_size = size_of::<ContactInfoParam<u32>>();
+            contactpointinfoparam_size = size_of::<ContactPointInfoParam<u32>>();
+            collisioninfoparam_size = size_of::<CollisionInfoParam<u32>>();
+            clothsetparam_size = size_of::<ClothSetParam<u32>>();
+            clothparam_size = size_of::<ClothParam<u32>>();
             edgerigidbodysetparam_size = size_of::<EdgeRigidBodySetParam<u32>>();
             edgerigidbodyparam_size = size_of::<EdgeRigidBodyParam<u32>>();
             supportboneparam_size = size_of::<SupportBoneParam<u32>>();

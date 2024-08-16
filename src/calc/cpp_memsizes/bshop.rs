@@ -8,9 +8,11 @@ use crate::Endian;
 const CLASS_SIZE_WIIU: usize = std::mem::size_of::<Shop<u64>>();
 const CLASS_SIZE_NX: usize = std::mem::size_of::<Shop<u64>>();
 
+const OVERHEAD_WIIU: usize = 0xCC;
+
 pub fn parse_size(bytes: &[u8], endian: Endian) -> Option<u32> {
     let mut total_size = match endian {
-        Endian::Big => super::PARSE_CONST_WIIU + CLASS_SIZE_WIIU,
+        Endian::Big => super::PARSE_CONST_WIIU + CLASS_SIZE_WIIU + OVERHEAD_WIIU,
         Endian::Little => super::PARSE_CONST_NX + CLASS_SIZE_NX,
     };
 
