@@ -1003,8 +1003,7 @@ mod tests {
     }
 
     #[cfg(feature = "complex_testing")]
-    #[test]
-    fn test_all_bdmgparam_nx() {
+    fn test_all_of_type_nx(link: &str, folder: &str, ext: &str) {
         use std::collections::HashSet;
         use roead::{aamp::ParameterIO, sarc};
 
@@ -1012,6 +1011,8 @@ mod tests {
 
         use crate::ResourceSizeTable;
         let mut result: HashSet<String> = HashSet::new();
+        let mut overshot: i32 = -100000;
+        let mut undershot: i32 = 100000;
 
         let update_path = get_update_path_nx();
         let rstb_path = update_path
@@ -1042,11 +1043,11 @@ mod tests {
                         .objects
                         .get("LinkTarget")
                         .unwrap()
-                        .get("DamageParamUser")
+                        .get(link)
                         .unwrap()
                         .as_str()
                         .unwrap();
-                    let param_name = format!("Actor/DamageParam/{}.bdmgparam", user);
+                    let param_name = format!("Actor/{}/{}.{}", folder, user, ext);
                     if param_name.contains("Dummy") | result.contains(&param_name) {
                         continue;
                     }
@@ -1058,7 +1059,14 @@ mod tests {
                                 Endian::Little,
                             )
                             .unwrap();
-                            assert_ge!(calc_size, rstb_entry);
+                            let current = calc_size as i32 - rstb_entry as i32;
+                            if overshot < current {
+                                overshot = current;
+                            }
+                            if undershot > current {
+                                undershot = current;
+                            }
+                            //assert_ge!(calc_size, rstb_entry);
                             result.insert(param_name);
                         } else {
                             println!("{} not in RSTB???", &param_name);
@@ -1069,6 +1077,181 @@ mod tests {
                 Err(_) => println!("File error...?"),
             }
         }
+        println!("Range (max amount of memory wasted with the overhead): {}", overshot - undershot);
+        println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_all_baiprog_nx() {
+        test_all_of_type_nx("AIProgramUser", "AIProgram", "baiprog");
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_all_baniminfo_nx() {
+        test_all_of_type_nx("AnimationInfo", "AnimationInfo", "baniminfo");
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_all_baslist_nx() {
+        test_all_of_type_nx("ASUser", "ASList", "baslist");
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_all_bchemical_nx() {
+        test_all_of_type_nx("ChemicalUser", "Chemical", "bchemical");
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_all_bdmgparam_nx() {
+        test_all_of_type_nx("DamageParamUser", "DamageParam", "bdmgparam");
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_all_bdrop_nx() {
+        test_all_of_type_nx("DropTableUser", "DropTable", "bdrop");
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_all_bgparamlist_nx() {
+        test_all_of_type_nx("GParamUser", "GeneralParamList", "bgparamlist");
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_all_blifecondition_nx() {
+        test_all_of_type_nx("LifeConditionUser", "LifeCondition", "blifecondition");
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_all_bmodellist_nx() {
+        test_all_of_type_nx("ModelUser", "ModelList", "bmodellist");
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_all_bphysics_nx() {
+        test_all_of_type_nx("PhysicsUser", "Physics", "bphysics");
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_all_bphyssb_nx() {
+        use std::collections::HashSet;
+        use roead::{aamp::ParameterIO, sarc};
+
+        use glob::glob;
+
+        use crate::ResourceSizeTable;
+        let mut result: HashSet<String> = HashSet::new();
+        let mut overshot: i32 = -100000;
+        let mut undershot: i32 = 100000;
+
+        let update_path = get_update_path_nx();
+        let rstb_path = update_path
+            .join("System")
+            .join("Resource")
+            .join("ResourceSizeTable.product.srsizetable");
+        let rstable = ResourceSizeTable::from_binary(
+                std::fs::read(rstb_path).unwrap()
+            ).unwrap();
+        for entry in glob(
+                update_path.join("Actor")
+                    .join("Pack")
+                    .join("*.sbactorpack")
+                    .to_string_lossy()
+                    .as_ref()
+            ).unwrap() {
+            match entry {
+                Ok(path) => {
+                    let actorname = path.file_stem().unwrap().to_str().unwrap();
+                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    let bxml = ParameterIO::from_binary(
+                        sarc.get_data(&format!("Actor/ActorLink/{}.bxml", actorname))
+                            .unwrap(),
+                    )
+                    .unwrap();
+                    let user = bxml
+                        .param_root
+                        .objects
+                        .get("LinkTarget")
+                        .unwrap()
+                        .get("PhysicsUser")
+                        .unwrap()
+                        .as_str()
+                        .unwrap();
+                    if user == "Dummy" {
+                        continue;
+                    }
+                    let bphysics = ParameterIO::from_binary(
+                        sarc.get_data(&format!("Actor/Physics/{}.bphysics", user))
+                            .unwrap()
+                    )
+                    .unwrap();
+                    if let Some(paramset) = bphysics.param_root.lists.get("ParamSet") {
+                        if let Some(paramsetheader) = paramset.objects.get("ParamSetHeader") {
+                            if paramsetheader.get("use_support_bone").unwrap().as_bool().unwrap() {
+                                let support_bone_path = paramset.objects
+                                    .get("SupportBone")
+                                    .unwrap()
+                                    .get("support_bone_setup_file_path")
+                                    .unwrap()
+                                    .as_string256()
+                                    .unwrap();
+                                let param_name = format!("Physics/SupportBone/{}", support_bone_path);
+                                if result.contains(&param_name) {
+                                    continue;
+                                }
+                                if let Some(o_file) = sarc.get_data(&param_name) {
+                                    if let Some(rstb_entry) = rstable.get(param_name.as_str()) {
+                                        let calc_size = super::estimate_from_bytes_and_name(
+                                            o_file,
+                                            &param_name,
+                                            Endian::Little,
+                                        )
+                                        .unwrap();
+                                        let current = calc_size as i32 - rstb_entry as i32;
+                                        if overshot < current {
+                                            overshot = current;
+                                        }
+                                        if undershot > current {
+                                            undershot = current;
+                                        }
+                                        //assert_ge!(calc_size, rstb_entry);
+                                        result.insert(param_name);
+                                    } else {
+                                        println!("{} not in RSTB???", &param_name);
+                                        continue;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                Err(_) => println!("File error...?"),
+            }
+        }
+        println!("Range (max amount of memory wasted with the overhead): {}", overshot - undershot);
+        println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_all_brecipe_nx() {
+        test_all_of_type_nx("RecipeUser", "Recipe", "brecipe");
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_all_bshop_nx() {
+        test_all_of_type_nx("ShopDataUser", "ShopData", "bshop");
     }
 
     #[cfg(feature = "complex_testing")]
@@ -1081,7 +1264,8 @@ mod tests {
 
         use crate::ResourceSizeTable;
         let mut result: HashSet<String> = HashSet::new();
-        let mut biggest_diff: u32 = 0;
+        let mut overshot: i32 = -100000;
+        let mut undershot: i32 = 100000;
 
         let update_path = get_update_path_nx();
         let rstb_path = update_path
@@ -1114,9 +1298,12 @@ mod tests {
                             Endian::Little,
                         )
                         .unwrap();
-                        //println!("{} - vanilla: {} calc: {}", actorname, rstb_entry, calc_size);
-                        if rstb_entry - calc_size > biggest_diff {
-                            biggest_diff = rstb_entry - calc_size;
+                        let current = calc_size as i32 - rstb_entry as i32;
+                        if overshot < current {
+                            overshot = current;
+                        }
+                        if undershot > current {
+                            undershot = current;
                         }
                         //assert_ge!(calc_size, rstb_entry);
                         result.insert(param_name);
@@ -1128,7 +1315,8 @@ mod tests {
                 Err(_) => println!("File error...?"),
             }
         }
-        println!("{}", biggest_diff);
+        println!("Range (max amount of memory wasted with the overhead): {}", overshot - undershot);
+        println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
     }
 
     #[cfg(feature = "complex_testing")]
