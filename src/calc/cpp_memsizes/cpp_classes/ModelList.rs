@@ -20,19 +20,19 @@ pub struct ControllerInfo<T> {
     mObj:                       agl::ParameterObj<T>,                   // agl::util::ParameterObj
     mBaseScale:                 agl::Parameter<T, sead::Vector3f>,      // agl::util::Parameter<sead::Vector3f>
     mVariationMatAnim:          agl::Parameter<T, sead::SafeString<T>>, // agl::util::Parameter<sead::SafeString>
-    mVariationMatAnimFrame:     agl::Parameter<T, S32>,                 // agl::util::Parameter<s32>
+    mVariationMatAnimFrame:     agl::Parameter<T, i32>,                 // agl::util::Parameter<i32>
     mVariationShaderAnim:       agl::Parameter<T, sead::SafeString<T>>, // agl::util::Parameter<sead::SafeString>
-    mVariationShaderAnimFrame:  agl::Parameter<T, S32>,                 // agl::util::Parameter<s32>
+    mVariationShaderAnimFrame:  agl::Parameter<T, i32>,                 // agl::util::Parameter<i32>
     mCalcAABBASKey:             agl::Parameter<T, sead::SafeString<T>>, // agl::util::Parameter<sead::SafeString>
 }
 
 #[repr(C)]
 pub struct Attention<T> {
-    mIsEnableAttention:         agl::Parameter<T, Bool32>,              // agl::utl::Parameter<bool>
+    mIsEnableAttention:         agl::Parameter<T, bool>,                // agl::utl::Parameter<bool>
     mLookAtBone:                agl::Parameter<T, sead::SafeString<T>>, // agl::utl::Parameter<sead::SafeString>
     mLookAtOffset:              agl::Parameter<T, sead::Vector3f>,      // agl::utl::Parameter<sead::Vector3f>
-    mCursorOffsetY:             agl::Parameter<T, F32>,                 // agl::utl::Parameter<f32>
-    mAIInfoOffsetY:             agl::Parameter<T, F32>,                 // agl::utl::Parameter<f32>
+    mCursorOffsetY:             agl::Parameter<T, f32>,                 // agl::utl::Parameter<f32>
+    mAIInfoOffsetY:             agl::Parameter<T, f32>,                 // agl::utl::Parameter<f32>
     mCutTargetBone:             agl::Parameter<T, sead::SafeString<T>>, // agl::utl::Parameter<sead::SafeString>
     mCutTargetOffset:           agl::Parameter<T, sead::Vector3f>,      // agl::utl::Parameter<sead::Vector3f>
     mGameCameraBone:            agl::Parameter<T, sead::SafeString<T>>, // agl::utl::Parameter<sead::SafeString>
@@ -41,10 +41,10 @@ pub struct Attention<T> {
     mBowCameraOffset:           agl::Parameter<T, sead::Vector3f>,      // agl::utl::Parameter<sead::Vector3f>
     mAttackTargetBone:          agl::Parameter<T, sead::SafeString<T>>, // agl::utl::Parameter<sead::SafeString>
     mAttackTargetOffset:        agl::Parameter<T, sead::Vector3f>,      // agl::utl::Parameter<sead::Vector3f>
-    mAttackTargetOffsetBack:    agl::Parameter<T, F32>,                 // agl::utl::Parameter<f32>
+    mAttackTargetOffsetBack:    agl::Parameter<T, f32>,                 // agl::utl::Parameter<f32>
     mAtObstacleChkOffsetBone:   agl::Parameter<T, sead::SafeString<T>>, // agl::utl::Parameter<sead::SafeString>
     mAtObstacleChkOffset:       agl::Parameter<T, sead::Vector3f>,      // agl::utl::Parameter<sead::Vector3f>
-    mAtObstacleChkUseLookAtPos: agl::Parameter<T, Bool32>,              // agl::utl::Parameter<bool>
+    mAtObstacleChkUseLookAtPos: agl::Parameter<T, bool>,                // agl::utl::Parameter<bool>
     mCursorAIInfoBaseBone:      agl::Parameter<T, sead::SafeString<T>>, // agl::utl::Parameter<sead::SafeString>
     mCursorAIInfoBaseOffset:    agl::Parameter<T, sead::Vector3f>,      // agl::utl::Parameter<sead::Vector3f>
     mObj:                       agl::ParameterObj<T>,                   // agl::utl::ParameterObj
@@ -69,16 +69,16 @@ pub struct ModelData<T> {
 #[repr(C)]
 pub struct Partial<T> {
     bone:       agl::Parameter<T, sead::SafeString<T>>,
-    bind_flag:  agl::Parameter<T, S32>,
-    recursible: agl::Parameter<T, Bool32>,
+    bind_flag:  agl::Parameter<T, i32>,
+    recursible: agl::Parameter<T, bool>,
     obj:        agl::ParameterObj<T>,
 }
 
 #[repr(C)]
 pub struct AnmTarget<T> {
-    num_as_slot:        agl::Parameter<T, S32>,
-    is_partical_enable: agl::Parameter<T, Bool32>,
-    target_type:        agl::Parameter<T, S32>,
+    num_as_slot:        agl::Parameter<T, i32>,
+    is_partical_enable: agl::Parameter<T, bool>,
+    target_type:        agl::Parameter<T, i32>,
     base_obj:           agl::ParameterObj<T>,
     partials:           sead::Buffer<T>,
     partial_list:       agl::ParameterList<T>,

@@ -1,4 +1,4 @@
-use super::{agl, sead, Bool32, Float, ParamIO, Resource};
+use super::{agl, sead, ParamIO, Resource};
 
 #[repr(C)]
 pub struct ASList<T> {
@@ -28,8 +28,8 @@ pub struct ASDefine<T> {
 #[repr(C)]
 pub struct CFPost<T> {
     name:               agl::Parameter<T, sead::SafeString<T>>,
-    frame:              agl::Parameter<T, Float>,
-    start_frame_rate:   agl::Parameter<T, Float>,
+    frame:              agl::Parameter<T, f32>,
+    start_frame_rate:   agl::Parameter<T, f32>,
     obj:                agl::ParameterObj<T>,
 }
 
@@ -53,12 +53,12 @@ pub struct CFDefine<T> {
 pub struct AddRes<T> {
     anim:                   agl::Parameter<T, sead::SafeString<T>>,
     retarget_model:         agl::Parameter<T, sead::SafeString<T>>,
-    retarget_no_correct:    agl::Parameter<T, Bool32>,
+    retarget_no_correct:    agl::Parameter<T, bool>,
     obj:                    agl::ParameterObj<T>,
 }
 
 #[repr(C)]
 pub struct Common<T> {
-    rate_all:   agl::Parameter<T, Float>,
+    rate_all:   agl::Parameter<T, f32>,
     obj:        agl::ParameterObj<T>,
 }

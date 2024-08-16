@@ -1,4 +1,4 @@
-use super::{agl, sead, ParamIO, Resource, F32};
+use super::{agl, sead, ParamIO, Resource};
 
 #[repr(C)]
 pub struct LifeCondition<T> {
@@ -13,7 +13,7 @@ pub struct LifeCondition<T> {
     mYLimitAlgorithmObj:    agl::ParameterObj<T>,                   // agl::utl::ParameterObj
     mInvalidWeathersBuffer: sead::Buffer<T>,                        // sead::Buffer<agl::utl::Parameter<sead::SafeString>>
     mInvalidTimesBuffer:    sead::Buffer<T>,                        // sead::Buffer<agl::utl::Parameter<sead::SafeString>>
-    mDisplayDistance:       agl::Parameter<T, F32>,                 // agl::utl::Parameter<f32>
+    mDisplayDistance:       agl::Parameter<T, f32>,                 // agl::utl::Parameter<f32>
     mBoundingY:             agl::Parameter<T, sead::SafeString<T>>, // agl::utl::Parameter<sead::SafeString>
     mYLimitAlgorithm:       agl::Parameter<T, sead::SafeString<T>>, // agl::utl::Parameter<sead::SafeString>
     mDeleteWeathersBuffer:  sead::Buffer<T>,                        // sead::Buffer<agl::utl::Parameter<sead::SafeString>>

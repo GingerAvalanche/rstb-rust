@@ -1,4 +1,4 @@
-use super::{agl, sead, ParamIO, Resource, F32, S32};
+use super::{agl, sead, ParamIO, Resource};
 
 #[repr(C)]
 pub struct Drop<T> {
@@ -14,16 +14,16 @@ pub struct Drop<T> {
 pub struct Table<T> {
     obj:                    agl::ParameterObj<T>,
     name:                   agl::Parameter<T, sead::SafeString<T>>,
-    repeat_num_min:         agl::Parameter<T, S32>,
-    repeat_num_max:         agl::Parameter<T, S32>,
-    approach_type:          agl::Parameter<T, S32>,
-    occurrence_speed_type:  agl::Parameter<T, S32>,
-    column_num:             agl::Parameter<T, S32>,
+    repeat_num_min:         agl::Parameter<T, i32>,
+    repeat_num_max:         agl::Parameter<T, i32>,
+    approach_type:          agl::Parameter<T, i32>,
+    occurrence_speed_type:  agl::Parameter<T, i32>,
+    column_num:             agl::Parameter<T, i32>,
     items:                  sead::Buffer<T>,
 }
 
 #[repr(C)]
 pub struct Item<T> {
     name:           agl::Parameter<T, sead::SafeString<T>>,
-    probability:    agl::Parameter<T, F32>,
+    probability:    agl::Parameter<T, f32>,
 }

@@ -1,4 +1,4 @@
-use super::{agl, sead, F32, ParamIO, Resource};
+use super::{agl, sead, ParamIO, Resource};
 
 #[repr(C)]
 struct Users<T> {
@@ -38,7 +38,7 @@ pub struct ActorLink<T> {
     mUsers:         Users<T>,                               // Users
     mActorNameJpn:  agl::Parameter<T, sead::SafeString<T>>, // agl::utl::Parameter<sead::SafeString>
     mPriority:      agl::Parameter<T, sead::SafeString<T>>, // agl::utl::Parameter<sead::SafeString>
-    mActorScale:    agl::Parameter<T, F32>,                 // agl::utl::Parameter<f32>
+    mActorScale:    agl::Parameter<T, f32>,                 // agl::utl::Parameter<f32>
     mTags:          sead::Buffer<T>,                        // sead::Buffer<u32>
     mHeap:          T,                                      // sead::Heap*
 }
