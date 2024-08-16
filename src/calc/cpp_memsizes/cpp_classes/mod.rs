@@ -17,25 +17,6 @@ pub mod SupportBone;
 pub mod agl;
 pub mod sead;
 
-pub struct Bool32 {
-    v: u32,
-}
-pub struct Int {
-    v: i32,
-}
-pub struct S32 {
-    v: i32,
-}
-pub struct U32 {
-    v: u32,
-}
-pub struct Float {
-    v: f32,
-}
-pub struct F32 {
-    v: f32,
-}
-
 #[repr(C)]
 pub struct ParamIO<T> {
     base:   agl::IParameterIO<T>,
