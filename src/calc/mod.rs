@@ -71,6 +71,11 @@ fn round_32(size: usize) -> u32 {
     ((size as isize + 31) & -32) as u32
 }
 
+#[inline]
+fn round_64(size: usize) -> u32 {
+    ((size as isize + 63) & -64) as u32
+}
+
 /// Infallibly calculate an RSTB value from a file on disk, returning `None` if
 /// the type is not supported.
 pub fn calc_from_file<P: AsRef<Path>>(file: P, endian: Endian) -> Result<Option<u32>> {
@@ -234,7 +239,10 @@ fn calc_or_estimate_from_bytes_and_name(
             b"Yaz0" => u32::from_be_bytes(bytes[4..8].try_into().ok()?) as usize,
             _ => bytes.len(),
         };
-        let rounded = round_32(filesize);
+        let rounded = match endian {
+            Endian::Big => round_64(filesize),
+            Endian::Little => round_32(filesize),
+        };
         let raw_ext = &name[dot_pos + 1..];
         let ext = match raw_ext {
             "sarc" => "sarc",
