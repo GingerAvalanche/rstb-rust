@@ -16,6 +16,9 @@ pub mod cpp_classes;
 const PARSE_CONST_WIIU: usize = 0xe4;
 const PARSE_CONST_NX: usize = 0x168;
 
+const ITER_CONST_WIIU: usize = 0x10;
+const ITER_CONST_NX: usize = 0x20;
+
 // Leaving this here in case I need it for some reason in the future
 #[allow(dead_code)]
 const fn cpp_align(list: &[u32], alignment: &u32) -> u32 {

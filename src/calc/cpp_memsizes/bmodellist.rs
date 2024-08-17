@@ -8,7 +8,7 @@ use crate::Endian;
 const CLASS_SIZE_WIIU: usize = std::mem::size_of::<ModelList<u32>>();
 const CLASS_SIZE_NX: usize = std::mem::size_of::<ModelList<u64>>();
 
-const OVERHEAD_WIIU: usize = 0xBC;
+const OVERHEAD_WIIU: usize = 0x1C;
 const OVERHEAD_NX: usize = 0x0;
 const NUM_UNIT_MAX: usize = 8;
 
@@ -19,15 +19,23 @@ pub fn parse_size(bytes: &[u8], endian: Endian) -> Option<u32> {
     };
 
     let a = ParameterIO::from_binary(bytes).ok()?;
-    let (anmtarget_size, modeldata_size, partial_size, unit_size): (usize, usize, usize, usize);
+    let (
+        iter_const,
+        anmtarget_size,
+        modeldata_size,
+        partial_size,
+        unit_size,
+    );
     match endian {
         Endian::Big => {
+            iter_const = super::ITER_CONST_WIIU;
             anmtarget_size = size_of::<AnmTarget<u32>>();
             modeldata_size = size_of::<ModelData<u32>>();
             partial_size = size_of::<Partial<u32>>();
             unit_size = size_of::<Unit<u32>>();
         }
         Endian::Little => {
+            iter_const = super::ITER_CONST_NX;
             anmtarget_size = size_of::<AnmTarget<u64>>();
             modeldata_size = size_of::<ModelData<u64>>();
             partial_size = size_of::<Partial<u64>>();
@@ -37,32 +45,47 @@ pub fn parse_size(bytes: &[u8], endian: Endian) -> Option<u32> {
 
     if let Some(modeldata) = a.param_root.lists.get("ModelData") {
         let num_modeldata = modeldata.lists.len();
+        if num_modeldata > 0 {
+            total_size += iter_const;
+        }
         total_size += num_modeldata * modeldata_size;
         for i in 0..num_modeldata {
             let modeldata_name = format!("ModelData_{}", i);
             if let Some(model) = modeldata.lists.get(modeldata_name) {
                 if let Some(unit) = model.lists.get("Unit") {
-                    let num_unit = unit.objects.len();
-                    if num_unit > NUM_UNIT_MAX {
-                        total_size += NUM_UNIT_MAX * unit_size;
+                    let num_unit = if unit.objects.len() < NUM_UNIT_MAX {
+                        unit.objects.len()
                     } else {
-                        total_size += num_unit * unit_size;
+                        NUM_UNIT_MAX
+                    };
+                    if num_unit > 0 {
+                        total_size += iter_const;
                     }
+                    total_size += num_unit * unit_size;
                 }
             }
         }
     }
+
     if let Some(anmtarget) = a.param_root.lists.get("AnmTarget") {
-        let mut num_anmtarget = anmtarget.lists.len();
-        if num_anmtarget > NUM_UNIT_MAX {
-            num_anmtarget = NUM_UNIT_MAX;
+        let num_anmtarget = if anmtarget.lists.len() < NUM_UNIT_MAX {
+            anmtarget.lists.len()
+        } else {
+            NUM_UNIT_MAX
+        };
+        if num_anmtarget > 0 {
+            total_size += iter_const;
         }
         total_size += num_anmtarget * anmtarget_size;
         for i in 0..num_anmtarget {
             let anmtarget_name = format!("AnmTarget_{}", i);
             if let Some(target) = anmtarget.lists.get(anmtarget_name) {
                 if let Some(partial) = target.lists.get("Partial") {
-                    total_size += partial.objects.len() * partial_size;
+                    let num_partial = partial.objects.len();
+                    if num_partial > 0 {
+                        total_size += iter_const;
+                    }
+                    total_size += num_partial * partial_size;
                 }
             }
         }
