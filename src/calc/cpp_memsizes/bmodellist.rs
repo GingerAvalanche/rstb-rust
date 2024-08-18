@@ -9,7 +9,7 @@ const CLASS_SIZE_WIIU: usize = std::mem::size_of::<ModelList<u32>>();
 const CLASS_SIZE_NX: usize = std::mem::size_of::<ModelList<u64>>();
 
 const OVERHEAD_WIIU: usize = 0x1C;
-const OVERHEAD_NX: usize = 0x0;
+const OVERHEAD_NX: usize = 0x28;
 const NUM_UNIT_MAX: usize = 8;
 
 pub fn parse_size(bytes: &[u8], endian: Endian) -> Option<u32> {
@@ -35,7 +35,7 @@ pub fn parse_size(bytes: &[u8], endian: Endian) -> Option<u32> {
             unit_size = size_of::<Unit<u32>>();
         }
         Endian::Little => {
-            iter_const = super::ITER_CONST_NX;
+            iter_const = super::ITER_CONST_NX + 8;
             anmtarget_size = size_of::<AnmTarget<u64>>();
             modeldata_size = size_of::<ModelData<u64>>();
             partial_size = size_of::<Partial<u64>>();
