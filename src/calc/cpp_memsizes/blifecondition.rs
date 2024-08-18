@@ -8,7 +8,7 @@ const CLASS_SIZE_NX: usize = std::mem::size_of::<LifeCondition<u64>>();
 
 // TODO: Why does this still have unaccounted-for overhead?
 const OVERHEAD_WIIU: usize = 0x40;
-const OVERHEAD_NX: usize = 0x0;
+const OVERHEAD_NX: usize = 0x28;
 
 pub fn parse_size(bytes: &[u8], endian: Endian) -> Option<u32> {
     let mut total_size: usize = match endian {
@@ -25,7 +25,7 @@ pub fn parse_size(bytes: &[u8], endian: Endian) -> Option<u32> {
             safestring_size = size_of::<agl::Parameter<u32, sead::SafeString<u32>>>();
         }
         Endian::Little => {
-            iter_size = super::ITER_CONST_NX;
+            iter_size = super::ITER_CONST_NX + 8;
             safestring_size = size_of::<agl::Parameter<u64, sead::SafeString<u64>>>();
         }
     }
