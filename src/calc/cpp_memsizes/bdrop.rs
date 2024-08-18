@@ -11,7 +11,7 @@ const CLASS_SIZE_NX: usize = std::mem::size_of::<Drop<u64>>();
 const OVERHEAD_WIIU: usize = 0x0;
 const OVERHEAD_NX: usize = 0x0;
 const HEADER_OVERHEAD_WIIU: usize = 0x20;
-const HEADER_OVERHEAD_NX: usize = 0x0;
+const HEADER_OVERHEAD_NX: usize = 0x18;
 
 pub fn parse_size(bytes: &[u8], endian: Endian) -> Option<u32> {
     let mut total_size = match endian {
@@ -34,7 +34,8 @@ pub fn parse_size(bytes: &[u8], endian: Endian) -> Option<u32> {
             item_size = size_of::<Item<u32>>();
         }
         Endian::Little => {
-            iter_size = super::ITER_CONST_NX;
+            // TODO: Why does this match ShopData's, but no others'?
+            iter_size = super::ITER_CONST_NX + 8;
             header_size = HEADER_OVERHEAD_NX;
             table_size = size_of::<Table<u64>>();
             item_size = size_of::<Item<u64>>();
