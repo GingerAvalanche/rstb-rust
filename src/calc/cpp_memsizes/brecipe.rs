@@ -12,9 +12,9 @@ const CLASS_SIZE_NX: usize = std::mem::size_of::<Recipe<u64>>();
 const BASE_OVERHEAD_WIIU: usize = 0x0;
 const BASE_OVERHEAD_NX: usize = 0x0;
 const HEADER_OVERHEAD_WIIU: usize = 0x20;
-const HEADER_OVERHEAD_NX: usize = 0x0;
+const HEADER_OVERHEAD_NX: usize = 0x18;
 const TABLES_OVERHEAD_WIIU: usize = 0x20;
-const TABLES_OVERHEAD_NX: usize = 0x0;
+const TABLES_OVERHEAD_NX: usize = 0x50;
 
 pub fn parse_size(bytes: &[u8], endian: Endian) -> Option<u32> {
     let mut total_size = match endian {
