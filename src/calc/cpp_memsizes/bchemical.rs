@@ -12,9 +12,9 @@ const CLASS_SIZE_NX: usize = std::mem::size_of::<Chemical<u64>>();
 const OVERHEAD_WIIU: usize = 0x0;
 const OVERHEAD_NX: usize = 0x0;
 const HEADER_OVERHEAD_WIIU: usize = 0x10;
-const HEADER_OVERHEAD_NX: usize = 0x0;
+const HEADER_OVERHEAD_NX: usize = 0x18;
 const ITER_OVERHEAD_WIIU: usize = 0x20;
-const ITER_OVERHEAD_NX: usize = 0x0;
+const ITER_OVERHEAD_NX: usize = 0x50;
 
 pub fn parse_size(bytes: &[u8], endian: Endian) -> Option<u32> {
     let mut total_size = match endian {
