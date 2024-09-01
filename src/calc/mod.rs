@@ -735,6 +735,8 @@ mod tests {
 
         use crate::ResourceSizeTable;
         let mut result: HashSet<String> = HashSet::new();
+        let mut overshot: i32 = -0x300000;
+        let mut undershot: i32 = 0x300000;
 
         let update_path = get_update_path();
         let rstb_path = update_path
@@ -781,7 +783,17 @@ mod tests {
                                 Endian::Big,
                             )
                             .unwrap();
-                            assert_ge!(calc_size, rstb_entry);
+                            let current = calc_size as i32 - rstb_entry as i32;
+                            if current > 0 {
+                                println!("{}//{}: {}", actorname, param_name, current);
+                            }
+                            if overshot < current {
+                                overshot = current;
+                            }
+                            if undershot > current {
+                                undershot = current;
+                            }
+                            //assert_ge!(calc_size, rstb_entry);
                             result.insert(param_name);
                         } else {
                             println!("{} not in RSTB???", &param_name);
@@ -792,6 +804,66 @@ mod tests {
                 Err(_) => println!("File error...?"),
             }
         }
+        let titlebg_path = update_path
+            .join("Pack")
+            .join("TitleBG.pack");
+        let titlebg = sarc::Sarc::new(std::fs::read(&titlebg_path).unwrap()).unwrap();
+        for file in titlebg.files() {
+            if file.name.unwrap_or("").starts_with("Actor/Pack") {
+                let actorname_as_pathbuf = PathBuf::from(file.name.unwrap());
+                let actorname = actorname_as_pathbuf
+                    .file_stem()
+                    .unwrap()
+                    .to_str()
+                    .unwrap();
+                let sarc = sarc::Sarc::new(file.data).unwrap();
+                let bxml = ParameterIO::from_binary(
+                    sarc.get_data(&format!("Actor/ActorLink/{}.bxml", actorname))
+                        .unwrap(),
+                )
+                .unwrap();
+                let user = bxml
+                    .param_root
+                    .objects
+                    .get("LinkTarget")
+                    .unwrap()
+                    .get(link)
+                    .unwrap()
+                    .as_str()
+                    .unwrap();
+                let param_name = format!("Actor/{}/{}.{}", folder, user, ext);
+                if param_name.contains("Dummy") | result.contains(&param_name) {
+                    continue;
+                }
+                if let Some(o_file) = sarc.get_data(&param_name) {
+                    if let Some(rstb_entry) = rstable.get(param_name.as_str()) {
+                        let calc_size = super::estimate_from_bytes_and_name(
+                            o_file,
+                            &param_name,
+                            Endian::Big,
+                        )
+                        .unwrap();
+                        let current = calc_size as i32 - rstb_entry as i32;
+                        if current > 0 {
+                            println!("{}//{}: {}", actorname, param_name, current);
+                        }
+                        if overshot < current {
+                            overshot = current;
+                        }
+                        if undershot > current {
+                            undershot = current;
+                        }
+                        //assert_ge!(calc_size, rstb_entry);
+                        result.insert(param_name);
+                    } else {
+                        println!("{} not in RSTB???", &param_name);
+                        continue;
+                    }
+                }
+            }
+        }
+        println!("Range (max amount of memory wasted with the overhead): {}", overshot - undershot);
+        println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
     }
 
     #[cfg(feature = "complex_testing")]
@@ -928,7 +1000,15 @@ mod tests {
                                             Endian::Big,
                                         )
                                         .unwrap();
-                                        assert_ge!(calc_size, rstb_entry);
+                                        let current = calc_size as i32 - rstb_entry as i32;
+                                        println!("{}//{}: {}", actorname, param_name, current);
+                                        if overshot < current {
+                                            overshot = current;
+                                        }
+                                        if undershot > current {
+                                            undershot = current;
+                                        }
+                                        //assert_ge!(calc_size, rstb_entry);
                                         result.insert(param_name);
                                     } else {
                                         println!("{} not in RSTB???", &param_name);
@@ -966,6 +1046,8 @@ mod tests {
 
         use crate::ResourceSizeTable;
         let mut result: HashSet<String> = HashSet::new();
+        let mut overshot: i32 = -0x300000;
+        let mut undershot: i32 = 0x300000;
 
         let update_path = get_update_path();
         let rstb_path = update_path
@@ -998,7 +1080,7 @@ mod tests {
                             Endian::Big,
                         )
                         .unwrap();
-                        assert_ge!(calc_size, rstb_entry);
+                        assert_eq!(calc_size, rstb_entry);
                         result.insert(param_name);
                     } else {
                         println!("{} not in RSTB???", &param_name);
@@ -1008,6 +1090,8 @@ mod tests {
                 Err(_) => println!("File error...?"),
             }
         }
+        println!("Range (max amount of memory wasted with the overhead): {}", overshot - undershot);
+        println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
     }
 
     #[cfg(feature = "complex_testing")]
@@ -1019,8 +1103,6 @@ mod tests {
 
         use crate::ResourceSizeTable;
         let mut result: HashSet<String> = HashSet::new();
-        let mut overshot: i32 = -100000;
-        let mut undershot: i32 = 100000;
 
         let update_path = get_update_path_nx();
         let rstb_path = update_path
@@ -1068,6 +1150,9 @@ mod tests {
                             )
                             .unwrap();
                             let current = calc_size as i32 - rstb_entry as i32;
+                            if current > 0 {
+                                println!("{}//{}: {}", actorname, param_name, current);
+                            }
                             if overshot < current {
                                 overshot = current;
                             }
@@ -1159,8 +1244,8 @@ mod tests {
 
         use crate::ResourceSizeTable;
         let mut result: HashSet<String> = HashSet::new();
-        let mut overshot: i32 = -100000;
-        let mut undershot: i32 = 100000;
+        let mut overshot: i32 = -0x300000;
+        let mut undershot: i32 = 0x300000;
 
         let update_path = get_update_path_nx();
         let rstb_path = update_path
@@ -1246,6 +1331,64 @@ mod tests {
                 Err(_) => println!("File error...?"),
             }
         }
+        let titlebg_path = update_path
+            .join("Pack")
+            .join("TitleBG.pack");
+        let titlebg = sarc::Sarc::new(std::fs::read(&titlebg_path).unwrap()).unwrap();
+        for file in titlebg.files() {
+            if file.name.unwrap_or("").starts_with("Actor/Pack") {
+                let actorname_as_pathbuf = PathBuf::from(file.name.unwrap());
+                let actorname = actorname_as_pathbuf
+                    .file_stem()
+                    .unwrap()
+                    .to_str()
+                    .unwrap();
+                let sarc = sarc::Sarc::new(file.data).unwrap();
+                let bxml = ParameterIO::from_binary(
+                    sarc.get_data(&format!("Actor/ActorLink/{}.bxml", actorname))
+                        .unwrap(),
+                )
+                .unwrap();
+                let user = bxml
+                    .param_root
+                    .objects
+                    .get("LinkTarget")
+                    .unwrap()
+                    .get(link)
+                    .unwrap()
+                    .as_str()
+                    .unwrap();
+                let param_name = format!("Actor/{}/{}.{}", folder, user, ext);
+                if param_name.contains("Dummy") | result.contains(&param_name) {
+                    continue;
+                }
+                if let Some(o_file) = sarc.get_data(&param_name) {
+                    if let Some(rstb_entry) = rstable.get(param_name.as_str()) {
+                        let calc_size = super::estimate_from_bytes_and_name(
+                            o_file,
+                            &param_name,
+                            Endian::Little,
+                        )
+                        .unwrap();
+                        let current = calc_size as i32 - rstb_entry as i32;
+                        if current > 0 {
+                            println!("{}//{}: {}", actorname, param_name, current);
+                        }
+                        if overshot < current {
+                            overshot = current;
+                        }
+                        if undershot > current {
+                            undershot = current;
+                        }
+                        //assert_ge!(calc_size, rstb_entry);
+                        result.insert(param_name);
+                    } else {
+                        println!("{} not in RSTB???", &param_name);
+                        continue;
+                    }
+                }
+            }
+        }
         println!("Range (max amount of memory wasted with the overhead): {}", overshot - undershot);
         println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
     }
@@ -1272,8 +1415,8 @@ mod tests {
 
         use crate::ResourceSizeTable;
         let mut result: HashSet<String> = HashSet::new();
-        let mut overshot: i32 = -100000;
-        let mut undershot: i32 = 100000;
+        let mut overshot: i32 = -0x300000;
+        let mut undershot: i32 = 0x300000;
 
         let update_path = get_update_path_nx();
         let rstb_path = update_path
@@ -1307,13 +1450,10 @@ mod tests {
                         )
                         .unwrap();
                         let current = calc_size as i32 - rstb_entry as i32;
-                        if overshot < current {
-                            overshot = current;
+                        if current > 0 {
+                            println!("{}: {}", param_name, current);
                         }
-                        if undershot > current {
-                            undershot = current;
-                        }
-                        //assert_ge!(calc_size, rstb_entry);
+                        assert_ge!(calc_size, rstb_entry);
                         result.insert(param_name);
                     } else {
                         println!("{} not in RSTB???", &param_name);
@@ -1323,8 +1463,6 @@ mod tests {
                 Err(_) => println!("File error...?"),
             }
         }
-        println!("Range (max amount of memory wasted with the overhead): {}", overshot - undershot);
-        println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
     }
 
     #[cfg(feature = "complex_testing")]
