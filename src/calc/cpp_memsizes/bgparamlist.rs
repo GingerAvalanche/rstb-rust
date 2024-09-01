@@ -9,8 +9,8 @@ use crate::Endian;
 const CLASS_SIZE_WIIU: usize = size_of::<GParamList<u32>>();
 const CLASS_SIZE_NX: usize = size_of::<GParamList<u64>>();
 
-const OVERHEAD_WIIU: usize = 0x318;
-const OVERHEAD_NX: usize = 0x0;
+const OVERHEAD_WIIU: usize = 0xEC;
+const OVERHEAD_NX: usize = 0x1C0;
 
 static OBJ_SIZES_WIIU: Map<&'static str, usize> = phf_map! {
     "AirWall" => size_of::<GParamListObjectAirWall<u32>>(),
@@ -186,10 +186,37 @@ pub fn parse_size(bytes: &[u8], endian: Endian) -> Option<u32> {
         Endian::Big => &OBJ_SIZES_WIIU,
         Endian::Little => &OBJ_SIZES_NX,
     };
+    let (
+        iter_size,
+        size_t,
+    );
+    match endian {
+        Endian::Big => {
+            iter_size = super::ITER_CONST_WIIU;
+            size_t = size_of::<u32>();
+        }
+        Endian::Little => {
+            iter_size = super::ITER_CONST_NX;
+            size_t = size_of::<u64>();
+        }
+    };
+
+    //constexpr size_t NumGParamListObjTypes = 1 + 0x4E;
+    //mObjects.allocBufferAssert(NumGParamListObjTypes, heap);
+    // I dunno what else to say. I guess we just alloc pointers
+    // for every damn thing.
+    total_size += 0x4F * size_t;
+
+    // This is a big hint, if I'm smart enough to figure out what it's
+    // hinting at: iter_size works here, but there *is no iterator* in
+    // the parse code. What is the connection, instead? addObj()?
     for (name, size) in (*obj_map).into_iter() {
         if a.param_root.objects.get(*name).is_some() {
-            total_size += size;
+            // Don't add size_t here, because the buffer is of pointers,
+            // which are trivially destructible
+            total_size += iter_size + size;
         }
     }
+
     Some(total_size as u32)
 }
