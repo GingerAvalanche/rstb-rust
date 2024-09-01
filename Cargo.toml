@@ -26,6 +26,7 @@ roead = { version = "0.25.3", features = [
     "aamp",
     "yaz0",
     "sarc",
+    "yaml"
 ], optional = true }
 ryml = { version = "0.3.2", features = ["std"], optional = true }
 serde = { version = "1", optional = true, features = ["derive"] }
