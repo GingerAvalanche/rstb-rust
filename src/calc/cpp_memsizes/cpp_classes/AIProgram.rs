@@ -32,7 +32,7 @@ pub struct AIActionDef<T> {
     base: Definition<T>,
     mGroupName:         T,                  // const char*
     mChildIndices:      sead::Buffer<T>,    // sead::Buffer<u16>
-    mBehaviorIndices:   sead::Buffer<T>,    //sead::Buffer<u8>
+    mBehaviorIndices:   sead::Buffer<T>,    // sead::Buffer<u8>
     mTriggerAction:     u16,                // u16
     mDynamicParamChild: u16,                // u16
     _c4:                u16,                // u16
