@@ -12,7 +12,7 @@ use crate::Endian;
 const CLASS_SIZE_WIIU: usize = std::mem::size_of::<Physics<u32>>();
 const CLASS_SIZE_NX: usize = std::mem::size_of::<Physics<u64>>();
 
-const OVERHEAD_WIIU: usize = 0x100; // 0x8C;
+const OVERHEAD_WIIU: usize = 0x120; // 0x8C;
 const OVERHEAD_NX: usize = 0x100; // 0xD0;
 
 pub fn parse_size(bytes: &[u8], endian: Endian) -> Option<u32> {
