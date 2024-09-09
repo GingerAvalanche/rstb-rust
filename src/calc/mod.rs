@@ -1553,7 +1553,7 @@ mod tests {
                             );
                         }
                     } else if ext == "bactorpack" {
-                        if rstable.contains(entry.as_str()) {
+                        if true /*rstable.contains(entry.as_str())*/ {
                             rstable.set(
                                 entry.as_str(),
                                 super::estimate_from_bytes_and_name(
@@ -1567,11 +1567,12 @@ mod tests {
                         let pack = sarc::Sarc::new(bg_file.data).unwrap();
                         for s_file in pack.files() {
                             let s_name = s_file.name.unwrap();
-                            if !rstable.contains(s_name) || parsed.contains(s_name) {
+                            if /* !rstable.contains(s_name) || */parsed.contains(s_name) {
                                 continue;
                             }
                             match Path::new(s_name).extension().unwrap().to_str().unwrap() {
                                 "baiprog"
+                                | "baischedule"
                                 | "baniminfo"
                                 | "baslist"
                                 | "bchemical"
@@ -1646,7 +1647,7 @@ mod tests {
                         path.file_stem().unwrap().to_str().unwrap()
                     );
                     let data = fs::read(&path).unwrap();
-                    if rstable.contains(param_name.as_str()) && !parsed.contains(&param_name) {
+                    if /*rstable.contains(param_name.as_str()) && */!parsed.contains(&param_name) {
                         rstable.set(
                             param_name.as_str(),
                             super::estimate_from_bytes_and_name(&data, &param_name, Endian::Big)
@@ -1657,11 +1658,12 @@ mod tests {
                     let pack = sarc::Sarc::new(data).unwrap();
                     for s_file in pack.files() {
                         let s_name = s_file.name.unwrap();
-                        if !rstable.contains(s_name) || parsed.contains(s_name) {
+                        if /* !rstable.contains(s_name) || */parsed.contains(s_name) {
                             continue;
                         }
                         match Path::new(s_name).extension().unwrap().to_str().unwrap() {
                             "baiprog"
+                            | "baischedule"
                             | "baniminfo"
                             | "baslist"
                             | "bchemical"
