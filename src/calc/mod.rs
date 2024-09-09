@@ -267,9 +267,10 @@ fn calc_or_estimate_from_bytes_and_name(
                             + size
                             + parse_size
                             + match ext {
+                                "baischedule" => 0x18,
                                 "beventpack" => 0xe0,
                                 "bfevfl" => 0x58,
-                                "hkrb" => 40,
+                                "hkrb" => 0x28,
                                 "bdmgparam" => 0x4c,
                                 _ => 0,
                             }
@@ -280,6 +281,7 @@ fn calc_or_estimate_from_bytes_and_name(
                             + size
                             + parse_size
                             + match ext {
+                                "baischedule" => 0x20,
                                 "bdmgparam" => 0x68,
                                 _ => 0,
                             }
@@ -874,6 +876,12 @@ mod tests {
 
     #[cfg(feature = "complex_testing")]
     #[test]
+    fn test_all_baischedule() {
+        test_all_of_type("AIScheduleUser", "AISchedule", "baischedule");
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
     fn test_all_baniminfo() {
         test_all_of_type("AnimationInfo", "AnimationInfo", "baniminfo");
     }
@@ -1238,6 +1246,12 @@ mod tests {
     #[test]
     fn test_all_baiprog_nx() {
         test_all_of_type_nx("AIProgramUser", "AIProgram", "baiprog");
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_all_baischedule_nx() {
+        test_all_of_type_nx("AIScheduleUser", "AISchedule", "baischedule");
     }
 
     #[cfg(feature = "complex_testing")]
