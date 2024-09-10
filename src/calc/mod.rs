@@ -1598,6 +1598,7 @@ mod tests {
                                 | "bphysics"
                                 | "bphyssb"
                                 | "brecipe"
+                                | "brgconfiglist"
                                 | "bshop"
                                 | "bxml"
                                 => {
@@ -1689,6 +1690,7 @@ mod tests {
                             | "bphysics"
                             | "bphyssb"
                             | "brecipe"
+                            | "brgconfiglist"
                             | "bshop"
                             | "bxml"
                             => {
