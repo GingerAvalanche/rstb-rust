@@ -274,8 +274,8 @@ pub(crate) fn get_factory_info<S: AsRef<str>>(ext: S, endian: Endian) -> (u32, P
         }
         "hkrg" => {
             match endian {
-                Endian::Little => (0x20, ParseSize::Simple(0)),
-                Endian::Big => (0x14, ParseSize::Simple(0)),
+                Endian::Little => (0x20, ParseSize::Simple(0x18)),
+                Endian::Big => (0x14, ParseSize::Simple(0x8)),
             }
         }
         "bphyssb" => {
