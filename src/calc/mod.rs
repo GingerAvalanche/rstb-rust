@@ -328,6 +328,8 @@ fn calc_or_estimate_from_bytes_and_name(
                         #[cfg(feature = "complex")]
                         "brecipe" => Some(rounded + brecipe::parse_size(bytes, endian)?),
                         #[cfg(feature = "complex")]
+                        "brgconfiglist" => Some(rounded + brgconfiglist::parse_size(bytes, endian)?),
+                        #[cfg(feature = "complex")]
                         "bshop" => Some(rounded + bshop::parse_size(bytes, endian)?),
                         #[cfg(feature = "complex")]
                         "bxml" => Some(rounded + bxml::parse_size(bytes, endian)?),
@@ -1044,6 +1046,12 @@ mod tests {
 
     #[cfg(feature = "complex_testing")]
     #[test]
+    fn test_all_brgconfiglist() {
+        test_all_of_type("RgConfigListUser", "RagdollConfigList", "brgconfiglist");
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
     fn test_all_bshop() {
         test_all_of_type("ShopDataUser", "ShopData", "bshop");
     }
@@ -1413,6 +1421,12 @@ mod tests {
     #[test]
     fn test_all_brecipe_nx() {
         test_all_of_type_nx("RecipeUser", "Recipe", "brecipe");
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_all_brgconfiglist_nx() {
+        test_all_of_type_nx("RgConfigListUser", "RagdollConfigList", "brgconfiglist");
     }
 
     #[cfg(feature = "complex_testing")]

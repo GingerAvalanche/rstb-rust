@@ -9,6 +9,7 @@ pub mod bmodellist;
 pub mod bphysics;
 pub mod bphyssb;
 pub mod brecipe;
+pub mod brgconfiglist;
 pub mod bshop;
 pub mod bxml;
 pub mod cpp_classes;

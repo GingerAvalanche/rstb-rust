@@ -11,6 +11,7 @@ pub mod GParamList;
 pub mod LifeCondition;
 pub mod ModelList;
 pub mod Physics;
+pub mod RagdollConfigList;
 pub mod Recipe;
 pub mod ShopData;
 pub mod SupportBone;
@@ -476,6 +477,16 @@ mod tests {
         assert_eq!(std::mem::size_of::<Physics::ParamSet<u64>>(), 0x1C0);
         assert_eq!(std::mem::size_of::<Physics::Physics<u32>>(), 0x324);
         assert_eq!(std::mem::size_of::<Physics::Physics<u64>>(), 0x470);
+    }
+
+    #[test]
+    fn ragdollconfiglist_size_tests() {
+        assert_eq!(std::mem::size_of::<RagdollConfigList::ImpulseParam<u32>>(), 0x34);
+        assert_eq!(std::mem::size_of::<RagdollConfigList::ImpulseParam<u64>>(), 0x60);
+        assert_eq!(std::mem::size_of::<RagdollConfigList::BodyParam<u32>>(), 0x50);
+        assert_eq!(std::mem::size_of::<RagdollConfigList::BodyParam<u64>>(), 0x98);
+        assert_eq!(std::mem::size_of::<RagdollConfigList::RagdollConfigList<u32>>(), 0x2D4);
+        assert_eq!(std::mem::size_of::<RagdollConfigList::RagdollConfigList<u64>>(), 0x3D0);
     }
 
     #[test]
