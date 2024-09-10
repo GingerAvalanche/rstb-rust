@@ -272,6 +272,7 @@ fn calc_or_estimate_from_bytes_and_name(
                                 "bfevfl" => 0x58,
                                 "hkrb" => 0x28,
                                 "bdmgparam" => 0x4c,
+                                "brgconfig" => 0x10,
                                 _ => 0,
                             }
                     }
@@ -283,6 +284,7 @@ fn calc_or_estimate_from_bytes_and_name(
                             + match ext {
                                 "baischedule" => 0x20,
                                 "bdmgparam" => 0x68,
+                                "brgconfig" => 0x20,
                                 _ => 0,
                             }
                     }
@@ -1046,6 +1048,184 @@ mod tests {
 
     #[cfg(feature = "complex_testing")]
     #[test]
+    fn test_all_brgconfig() {
+        use std::collections::HashSet;
+        use roead::{aamp::ParameterIO, sarc};
+
+        use glob::glob;
+
+        use crate::ResourceSizeTable;
+        let mut result: HashSet<String> = HashSet::new();
+        let mut overshot: i32 = -0x300000;
+        let mut undershot: i32 = 0x300000;
+
+        let update_path = get_update_path();
+        let rstb_path = update_path
+            .join("System")
+            .join("Resource")
+            .join("ResourceSizeTable.product.srsizetable");
+        let rstable = ResourceSizeTable::from_binary(
+                std::fs::read(rstb_path).unwrap()
+            ).unwrap();
+        for entry in glob(
+                update_path.join("Actor")
+                    .join("Pack")
+                    .join("*.sbactorpack")
+                    .to_string_lossy()
+                    .as_ref()
+            ).unwrap() {
+            match entry {
+                Ok(path) => {
+                    let actorname = path.file_stem().unwrap().to_str().unwrap();
+                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    let bxml = ParameterIO::from_binary(
+                        sarc.get_data(&format!("Actor/ActorLink/{}.bxml", actorname))
+                            .unwrap(),
+                    )
+                    .unwrap();
+                    let user = bxml
+                        .param_root
+                        .objects
+                        .get("LinkTarget")
+                        .unwrap()
+                        .get("RgConfigListUser")
+                        .unwrap()
+                        .as_str()
+                        .unwrap();
+                    if user == "Dummy" {
+                        continue;
+                    }
+                    let brgconfiglist = ParameterIO::from_binary(
+                        sarc.get_data(&format!("Actor/RagdollConfigList/{}.brgconfiglist", user))
+                            .unwrap()
+                    )
+                    .unwrap();
+                    if let Some(impulseparams) = brgconfiglist.param_root.lists.get("ImpulseParamList") {
+                        for filename in impulseparams.objects
+                            .iter()
+                            .map(|(_, v)| v.get("FileName")
+                                .unwrap()
+                                .as_str()
+                                .unwrap()
+                            ) {
+                            let param_name = format!("Actor/RagdollConfig/{}.brgconfig", filename);
+                            if result.contains(&param_name) {
+                                continue;
+                            }
+                            if let Some(o_file) = sarc.get_data(&param_name) {
+                                if let Some(rstb_entry) = rstable.get(param_name.as_str()) {
+                                    //print!("{}//{}: ", path.to_string_lossy(), param_name);
+                                    let calc_size = super::estimate_from_bytes_and_name(
+                                        o_file,
+                                        &param_name,
+                                        Endian::Big,
+                                    )
+                                    .unwrap();
+                                    let current = calc_size as i32 - rstb_entry as i32;
+                                    if current > 0 {
+                                        println!("{}//{}: {}", actorname, param_name, current);
+                                    }
+                                    if overshot < current {
+                                        overshot = current;
+                                    }
+                                    if undershot > current {
+                                        undershot = current;
+                                    }
+                                    //assert_ge!(calc_size, rstb_entry);
+                                    result.insert(param_name);
+                                } else {
+                                    println!("{} not in RSTB???", &param_name);
+                                    continue;
+                                }
+                            }
+                        }
+                    }
+                }
+                Err(_) => println!("File error...?"),
+            }
+        }
+        let titlebg_path = update_path
+            .join("Pack")
+            .join("TitleBG.pack");
+        let titlebg = sarc::Sarc::new(std::fs::read(&titlebg_path).unwrap()).unwrap();
+        for file in titlebg.files() {
+            if file.name.unwrap_or("").starts_with("Actor/Pack") {
+                let actorname_as_pathbuf = PathBuf::from(file.name.unwrap());
+                let actorname = actorname_as_pathbuf
+                    .file_stem()
+                    .unwrap()
+                    .to_str()
+                    .unwrap();
+                let sarc = sarc::Sarc::new(file.data).unwrap();
+                let bxml = ParameterIO::from_binary(
+                    sarc.get_data(&format!("Actor/ActorLink/{}.bxml", actorname))
+                        .unwrap(),
+                )
+                .unwrap();
+                let user = bxml
+                    .param_root
+                    .objects
+                    .get("LinkTarget")
+                    .unwrap()
+                    .get("RgConfigListUser")
+                    .unwrap()
+                    .as_str()
+                    .unwrap();
+                if user == "Dummy" {
+                    continue;
+                }
+                let brgconfiglist = ParameterIO::from_binary(
+                    sarc.get_data(&format!("Actor/RagdollConfigList/{}.brgconfiglist", user))
+                        .unwrap()
+                )
+                .unwrap();
+                if let Some(impulseparams) = brgconfiglist.param_root.lists.get("ImpulseParamList") {
+                    for filename in impulseparams.objects
+                        .iter()
+                        .map(|(_, v)| v.get("FileName")
+                            .unwrap()
+                            .as_str()
+                            .unwrap()
+                        ) {
+                        let param_name = format!("Actor/RagdollConfig/{}.brgconfig", filename);
+                        if result.contains(&param_name) {
+                            continue;
+                        }
+                        if let Some(o_file) = sarc.get_data(&param_name) {
+                            if let Some(rstb_entry) = rstable.get(param_name.as_str()) {
+                                let calc_size = super::estimate_from_bytes_and_name(
+                                    o_file,
+                                    &param_name,
+                                    Endian::Big,
+                                )
+                                .unwrap();
+                                let current = calc_size as i32 - rstb_entry as i32;
+                                if current > 0 {
+                                    println!("{}//{}: {}", actorname, param_name, current);
+                                }
+                                if overshot < current {
+                                    overshot = current;
+                                }
+                                if undershot > current {
+                                    undershot = current;
+                                }
+                                //assert_ge!(calc_size, rstb_entry);
+                                result.insert(param_name);
+                            } else {
+                                println!("{} not in RSTB???", &param_name);
+                                continue;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        println!("Range (max amount of memory wasted with the overhead): {}", overshot - undershot);
+        println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
     fn test_all_brgconfiglist() {
         test_all_of_type("RgConfigListUser", "RagdollConfigList", "brgconfiglist");
     }
@@ -1421,6 +1601,184 @@ mod tests {
     #[test]
     fn test_all_brecipe_nx() {
         test_all_of_type_nx("RecipeUser", "Recipe", "brecipe");
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_all_brgconfig_nx() {
+        use std::collections::HashSet;
+        use roead::{aamp::ParameterIO, sarc};
+
+        use glob::glob;
+
+        use crate::ResourceSizeTable;
+        let mut result: HashSet<String> = HashSet::new();
+        let mut overshot: i32 = -0x300000;
+        let mut undershot: i32 = 0x300000;
+
+        let update_path = get_update_path_nx();
+        let rstb_path = update_path
+            .join("System")
+            .join("Resource")
+            .join("ResourceSizeTable.product.srsizetable");
+        let rstable = ResourceSizeTable::from_binary(
+                std::fs::read(rstb_path).unwrap()
+            ).unwrap();
+        for entry in glob(
+                update_path.join("Actor")
+                    .join("Pack")
+                    .join("*.sbactorpack")
+                    .to_string_lossy()
+                    .as_ref()
+            ).unwrap() {
+            match entry {
+                Ok(path) => {
+                    let actorname = path.file_stem().unwrap().to_str().unwrap();
+                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    let bxml = ParameterIO::from_binary(
+                        sarc.get_data(&format!("Actor/ActorLink/{}.bxml", actorname))
+                            .unwrap(),
+                    )
+                    .unwrap();
+                    let user = bxml
+                        .param_root
+                        .objects
+                        .get("LinkTarget")
+                        .unwrap()
+                        .get("RgConfigListUser")
+                        .unwrap()
+                        .as_str()
+                        .unwrap();
+                    if user == "Dummy" {
+                        continue;
+                    }
+                    let brgconfiglist = ParameterIO::from_binary(
+                        sarc.get_data(&format!("Actor/RagdollConfigList/{}.brgconfiglist", user))
+                            .unwrap()
+                    )
+                    .unwrap();
+                    if let Some(impulseparams) = brgconfiglist.param_root.lists.get("ImpulseParamList") {
+                        for filename in impulseparams.objects
+                            .iter()
+                            .map(|(_, v)| v.get("FileName")
+                                .unwrap()
+                                .as_str()
+                                .unwrap()
+                            ) {
+                            let param_name = format!("Actor/RagdollConfig/{}.brgconfig", filename);
+                            if result.contains(&param_name) {
+                                continue;
+                            }
+                            if let Some(o_file) = sarc.get_data(&param_name) {
+                                if let Some(rstb_entry) = rstable.get(param_name.as_str()) {
+                                    //print!("{}//{}: ", path.to_string_lossy(), param_name);
+                                    let calc_size = super::estimate_from_bytes_and_name(
+                                        o_file,
+                                        &param_name,
+                                        Endian::Little,
+                                    )
+                                    .unwrap();
+                                    let current = calc_size as i32 - rstb_entry as i32;
+                                    if current > 0 {
+                                        println!("{}//{}: {}", actorname, param_name, current);
+                                    }
+                                    if overshot < current {
+                                        overshot = current;
+                                    }
+                                    if undershot > current {
+                                        undershot = current;
+                                    }
+                                    //assert_ge!(calc_size, rstb_entry);
+                                    result.insert(param_name);
+                                } else {
+                                    println!("{} not in RSTB???", &param_name);
+                                    continue;
+                                }
+                            }
+                        }
+                    }
+                }
+                Err(_) => println!("File error...?"),
+            }
+        }
+        let titlebg_path = update_path
+            .join("Pack")
+            .join("TitleBG.pack");
+        let titlebg = sarc::Sarc::new(std::fs::read(&titlebg_path).unwrap()).unwrap();
+        for file in titlebg.files() {
+            if file.name.unwrap_or("").starts_with("Actor/Pack") {
+                let actorname_as_pathbuf = PathBuf::from(file.name.unwrap());
+                let actorname = actorname_as_pathbuf
+                    .file_stem()
+                    .unwrap()
+                    .to_str()
+                    .unwrap();
+                let sarc = sarc::Sarc::new(file.data).unwrap();
+                let bxml = ParameterIO::from_binary(
+                    sarc.get_data(&format!("Actor/ActorLink/{}.bxml", actorname))
+                        .unwrap(),
+                )
+                .unwrap();
+                let user = bxml
+                    .param_root
+                    .objects
+                    .get("LinkTarget")
+                    .unwrap()
+                    .get("RgConfigListUser")
+                    .unwrap()
+                    .as_str()
+                    .unwrap();
+                if user == "Dummy" {
+                    continue;
+                }
+                let brgconfiglist = ParameterIO::from_binary(
+                    sarc.get_data(&format!("Actor/RagdollConfigList/{}.brgconfiglist", user))
+                        .unwrap()
+                )
+                .unwrap();
+                if let Some(impulseparams) = brgconfiglist.param_root.lists.get("ImpulseParamList") {
+                    for filename in impulseparams.objects
+                        .iter()
+                        .map(|(_, v)| v.get("FileName")
+                            .unwrap()
+                            .as_str()
+                            .unwrap()
+                        ) {
+                        let param_name = format!("Actor/RagdollConfig/{}.brgconfig", filename);
+                        if result.contains(&param_name) {
+                            continue;
+                        }
+                        if let Some(o_file) = sarc.get_data(&param_name) {
+                            if let Some(rstb_entry) = rstable.get(param_name.as_str()) {
+                                let calc_size = super::estimate_from_bytes_and_name(
+                                    o_file,
+                                    &param_name,
+                                    Endian::Little,
+                                )
+                                .unwrap();
+                                let current = calc_size as i32 - rstb_entry as i32;
+                                if current > 0 {
+                                    println!("{}//{}: {}", actorname, param_name, current);
+                                }
+                                if overshot < current {
+                                    overshot = current;
+                                }
+                                if undershot > current {
+                                    undershot = current;
+                                }
+                                //assert_ge!(calc_size, rstb_entry);
+                                result.insert(param_name);
+                            } else {
+                                println!("{} not in RSTB???", &param_name);
+                                continue;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        println!("Range (max amount of memory wasted with the overhead): {}", overshot - undershot);
+        println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
     }
 
     #[cfg(feature = "complex_testing")]
