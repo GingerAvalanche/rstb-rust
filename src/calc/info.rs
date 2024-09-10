@@ -244,8 +244,8 @@ pub(crate) fn get_factory_info<S: AsRef<str>>(ext: S, endian: Endian) -> (u32, P
         }
         "bumii" => {
             match endian {
-                Endian::Little => (0x2b8, ParseSize::Simple(0)),
-                Endian::Big => (0x244, ParseSize::Simple(0)),
+                Endian::Little => (0x2b8, ParseSize::Simple(0x20)),
+                Endian::Big => (0x244, ParseSize::Simple(0x18)),
             }
         }
         "baniminfo" => {

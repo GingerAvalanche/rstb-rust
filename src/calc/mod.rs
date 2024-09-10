@@ -1308,6 +1308,12 @@ mod tests {
 
     #[cfg(feature = "complex_testing")]
     #[test]
+    fn test_all_bumii() {
+        test_all_of_type("UMiiUser", "UMii", "bumii");
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
     fn test_all_bxml() {
         use std::collections::HashSet;
 
@@ -1941,6 +1947,12 @@ mod tests {
     #[test]
     fn test_all_bshop_nx() {
         test_all_of_type_nx("ShopDataUser", "ShopData", "bshop");
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_all_bumii_nx() {
+        test_all_of_type_nx("UMiiUser", "UMii", "bumii");
     }
 
     #[cfg(feature = "complex_testing")]
