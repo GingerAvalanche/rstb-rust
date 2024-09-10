@@ -908,8 +908,6 @@ mod tests {
 
         use crate::ResourceSizeTable;
         let mut result: HashSet<String> = HashSet::new();
-        let mut overshot: i32 = -0x300000;
-        let mut undershot: i32 = 0x300000;
 
         let update_path = get_update_path();
         let rstb_path = update_path
@@ -927,7 +925,6 @@ mod tests {
             ).unwrap() {
             match entry {
                 Ok(path) => {
-                    let actorname = path.file_stem().unwrap().to_str().unwrap();
                     let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
                     for file in sarc.files() {
                         let param_name = file.name.unwrap();
@@ -941,17 +938,7 @@ mod tests {
                                 Endian::Big,
                             )
                             .unwrap();
-                            let current = calc_size as i32 - rstb_entry as i32;
-                            if current > 0 {
-                                println!("{}//{}: {}", actorname, param_name, current);
-                            }
-                            if overshot < current {
-                                overshot = current;
-                            }
-                            if undershot > current {
-                                undershot = current;
-                            }
-                            //assert_ge!(calc_size, rstb_entry);
+                            assert_eq!(calc_size, rstb_entry);
                             result.insert(param_name.to_string());
                         } else {
                             println!("{} not in RSTB???", &param_name);
@@ -962,8 +949,6 @@ mod tests {
                 Err(_) => println!("File error...?"),
             }
         }
-        println!("Range (max amount of memory wasted with the overhead): {}", overshot - undershot);
-        println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
     }
 
     #[cfg(feature = "complex_testing")]
@@ -1007,6 +992,7 @@ mod tests {
             ).unwrap() {
             match entry {
                 Ok(path) => {
+                    let actorname = path.file_stem().unwrap().to_str().unwrap();
                     let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
                     for file in sarc.files() {
                         let param_name = file.name.unwrap();
@@ -1020,7 +1006,17 @@ mod tests {
                                 Endian::Big,
                             )
                             .unwrap();
-                            assert_eq!(calc_size, rstb_entry);
+                            let current = calc_size as i32 - rstb_entry as i32;
+                            if current > 0 {
+                                println!("{}//{}: {}", actorname, param_name, current);
+                            }
+                            if overshot < current {
+                                overshot = current;
+                            }
+                            if undershot > current {
+                                undershot = current;
+                            }
+                            //assert_ge!(calc_size, rstb_entry);
                             result.insert(param_name.to_string());
                         } else {
                             println!("{} not in RSTB???", &param_name);
@@ -1128,6 +1124,8 @@ mod tests {
 
         use crate::ResourceSizeTable;
         let mut result: HashSet<String> = HashSet::new();
+        let mut overshot: i32 = -0x300000;
+        let mut undershot: i32 = 0x300000;
 
         let update_path = get_update_path();
         let rstb_path = update_path
@@ -1214,6 +1212,8 @@ mod tests {
                 Err(_) => println!("File error...?"),
             }
         }
+        println!("Range (max amount of memory wasted with the overhead): {}", overshot - undershot);
+        println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
     }
 
     #[cfg(feature = "complex_testing")]
@@ -1374,8 +1374,6 @@ mod tests {
                 }
             }
         }
-        println!("Range (max amount of memory wasted with the overhead): {}", overshot - undershot);
-        println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
     }
 
     #[cfg(feature = "complex_testing")]
@@ -1586,6 +1584,8 @@ mod tests {
                 }
             }
         }
+        println!("Range (max amount of memory wasted with the overhead): {}", overshot - undershot);
+        println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
     }
 
     #[cfg(feature = "complex_testing")]
@@ -1634,8 +1634,6 @@ mod tests {
 
         use crate::ResourceSizeTable;
         let mut result: HashSet<String> = HashSet::new();
-        let mut overshot: i32 = -0x300000;
-        let mut undershot: i32 = 0x300000;
 
         let update_path = get_update_path_nx();
         let rstb_path = update_path
@@ -1677,8 +1675,6 @@ mod tests {
                 Err(_) => println!("File error...?"),
             }
         }
-        println!("Range (max amount of memory wasted with the overhead): {}", overshot - undershot);
-        println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
     }
 
     #[cfg(feature = "complex_testing")]
@@ -1839,6 +1835,8 @@ mod tests {
 
         use crate::ResourceSizeTable;
         let mut result: HashSet<String> = HashSet::new();
+        let mut overshot: i32 = -0x300000;
+        let mut undershot: i32 = 0x300000;
 
         let update_path = get_update_path_nx();
         let rstb_path = update_path
@@ -1924,6 +1922,8 @@ mod tests {
                 Err(_) => println!("File error...?"),
             }
         }
+        println!("Range (max amount of memory wasted with the overhead): {}", overshot - undershot);
+        println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
     }
 
     #[cfg(feature = "complex_testing")]
