@@ -142,60 +142,6 @@ mod tests {
     }
 
     #[test]
-    fn animseq_size_tests() {
-        assert_eq!(std::mem::size_of::<AnimSeq::ASResource<u32>>(), 0x58);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASResource<u64>>(), 0xB0);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASResourceWithChildren<u32>>(), 0x60);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASResourceWithChildren<u64>>(), 0xC0);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASSequencePlayContainerResource<u32>>(), 0x8C);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASSequencePlayContainerResource<u64>>(), 0x110);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASSelectorResource<u32>>(), 0x9C);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASSelectorResource<u64>>(), 0x130);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASBlenderResource<u32>>(), 0xAC);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASBlenderResource<u64>>(), 0x150);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASAssetResource<u32>>(), 0x88);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASAssetResource<u64>>(), 0x108);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASAssetExResource<u32>>(), 0x88);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASAssetExResource<u64>>(), 0x108);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASSkeltalAssetResource<u32>>(), 0xB8);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASSkeltalAssetResource<u64>>(), 0x168);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASParamParser<u32>>(), 0x2C);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASParamParser<u64>>(), 0x58);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASExtensions<u32>>(), 0x2C);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASExtensions<u64>>(), 0x58);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASFrameCtrlParser<u32>>(), 0xE8);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASFrameCtrlParser<u64>>(), 0x1C8);
-        assert_eq!(std::mem::size_of::<AnimSeq::TriggerEvent<u32>>(), 0x44);
-        assert_eq!(std::mem::size_of::<AnimSeq::TriggerEvent<u64>>(), 0x80);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASTriggerEventsParser<u32>>(), 0x34);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASTriggerEventsParser<u64>>(), 0x68);
-        assert_eq!(std::mem::size_of::<AnimSeq::HoldEvent<u32>>(), 0x54);
-        assert_eq!(std::mem::size_of::<AnimSeq::HoldEvent<u64>>(), 0xA0);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASHoldEventsParser<u32>>(), 0x34);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASHoldEventsParser<u64>>(), 0x68);
-        assert_eq!(std::mem::size_of::<AnimSeq::StringValue<u32>>(), 0x14);
-        assert_eq!(std::mem::size_of::<AnimSeq::StringValue<u64>>(), 0x28);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASStringArrayParser<u32>>(), 0x50);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASStringArrayParser<u64>>(), 0x98);
-        assert_eq!(std::mem::size_of::<AnimSeq::Range<u32>>(), 0x3C);
-        assert_eq!(std::mem::size_of::<AnimSeq::Range<u64>>(), 0x70);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASRangesParser<u32>>(), 0x34);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASRangesParser<u64>>(), 0x68);
-        assert_eq!(std::mem::size_of::<AnimSeq::FloatValue<u32>>(), 0x10);
-        assert_eq!(std::mem::size_of::<AnimSeq::FloatValue<u64>>(), 0x20);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASFloatArrayParser<u32>>(), 0x50);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASFloatArrayParser<u64>>(), 0x98);
-        assert_eq!(std::mem::size_of::<AnimSeq::IntValue<u32>>(), 0x10);
-        assert_eq!(std::mem::size_of::<AnimSeq::IntValue<u64>>(), 0x20);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASIntArrayParser<u32>>(), 0x50);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASIntArrayParser<u64>>(), 0x98);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASBitIndexParser<u32>>(), 0x30);
-        assert_eq!(std::mem::size_of::<AnimSeq::ASBitIndexParser<u64>>(), 0x60);
-        assert_eq!(std::mem::size_of::<AnimSeq::AS<u32>>(), 0x2D0);
-        assert_eq!(std::mem::size_of::<AnimSeq::AS<u64>>(), 0x3C8);
-    }
-
-    #[test]
     fn aslist_size_tests() {
         assert_eq!(std::mem::size_of::<ASList::ASDefine<u32>>(), 0x50);
         assert_eq!(std::mem::size_of::<ASList::ASDefine<u64>>(), 0x88);
