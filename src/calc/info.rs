@@ -260,6 +260,12 @@ pub(crate) fn get_factory_info<S: AsRef<str>>(ext: S, endian: Endian) -> (u32, P
                 Endian::Big => (0x14, ParseSize::Simple(0)),
             }
         }
+        "byml" => {
+            match endian {
+                Endian::Little => (0x38, ParseSize::Simple(0x28)),
+                Endian::Big => (0x20, ParseSize::Simple(0x3c)),
+            }
+        }
         "bassetting" => {
             match endian {
                 Endian::Little => (0x260, ParseSize::Complex),

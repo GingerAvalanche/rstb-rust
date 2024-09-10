@@ -249,6 +249,8 @@ fn calc_or_estimate_from_bytes_and_name(
             "Tex.sbfres" => "Tex.bfres",
             "Tex1.sbfres" => "Tex1.bfres",
             "Tex2.sbfres" => "Tex2.bfres",
+            "product.byml" => "byml",
+            "product.sbyml" => "byml",
             _ => {
                 if let Some(ext) = raw_ext.strip_prefix('s') {
                     ext
@@ -1489,7 +1491,7 @@ mod tests {
                                 Endian::Big,
                             )
                             .unwrap();
-                            assert_ge!(calc_size, rstb_entry + 0x48); // Vanilla entries are less than the required...?
+                            assert_eq!(calc_size, rstb_entry + 0x48); // Vanilla entries are less than the required...?
                             result.insert(param_name.to_string());
                         } else {
                             println!("{} not in RSTB???", &param_name);
@@ -1552,6 +1554,44 @@ mod tests {
                     }
                 }
                 Err(_) => println!("File error...?"),
+            }
+        }
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_bootup_byml() {
+        use roead::sarc;
+        use crate::ResourceSizeTable;
+
+        let update_path = get_update_path();
+        let rstb_path = update_path
+            .join("System")
+            .join("Resource")
+            .join("ResourceSizeTable.product.srsizetable");
+        let rstable = ResourceSizeTable::from_binary(
+                std::fs::read(rstb_path).unwrap()
+            ).unwrap();
+        let bootup_path = update_path
+            .join("Pack")
+            .join("Bootup.pack");
+        let bootup = sarc::Sarc::new(std::fs::read(&bootup_path).unwrap()).unwrap();
+        for file in bootup.files() {
+            if file.name.unwrap_or("").ends_with("byml") {
+                let name = file.name.unwrap().replace(".s", ".");
+                if let Some(rstb_entry) = rstable.get(name.as_ref()) {
+                    let calc_size = super::estimate_from_bytes_and_name(
+                        file.data,
+                        name.as_ref(),
+                        Endian::Big,
+                    )
+                    .unwrap();
+                    println!("{}: {}", name, calc_size - rstb_entry);
+                    assert_ge!(calc_size, rstb_entry);
+                } else {
+                    println!("{} not in RSTB???", name);
+                    continue;
+                }
             }
         }
     }
@@ -2373,6 +2413,44 @@ mod tests {
                     }
                 }
                 Err(_) => println!("File error...?"),
+            }
+        }
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_bootup_byml_nx() {
+        use roead::sarc;
+        use crate::ResourceSizeTable;
+
+        let update_path = get_update_path_nx();
+        let rstb_path = update_path
+            .join("System")
+            .join("Resource")
+            .join("ResourceSizeTable.product.srsizetable");
+        let rstable = ResourceSizeTable::from_binary(
+                std::fs::read(rstb_path).unwrap()
+            ).unwrap();
+        let bootup_path = update_path
+            .join("Pack")
+            .join("Bootup.pack");
+        let bootup = sarc::Sarc::new(std::fs::read(&bootup_path).unwrap()).unwrap();
+        for file in bootup.files() {
+            if file.name.unwrap_or("").ends_with("byml") {
+                let name = file.name.unwrap().replace(".s", ".");
+                if let Some(rstb_entry) = rstable.get(name.as_ref()) {
+                    let calc_size = super::estimate_from_bytes_and_name(
+                        file.data,
+                        name.as_ref(),
+                        Endian::Little,
+                    )
+                    .unwrap();
+                    println!("{}: {}", name, calc_size - rstb_entry);
+                    assert_ge!(calc_size, rstb_entry);
+                } else {
+                    println!("{} not in RSTB???", name);
+                    continue;
+                }
             }
         }
     }
