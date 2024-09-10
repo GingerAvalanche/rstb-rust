@@ -190,8 +190,8 @@ pub(crate) fn get_factory_info<S: AsRef<str>>(ext: S, endian: Endian) -> (u32, P
         }
         "brgconfig" => {
             match endian {
-                Endian::Little => (0x42d8, ParseSize::Simple(0)),
-                Endian::Big => (0x2acc, ParseSize::Simple(0)),
+                Endian::Little => (0x42d8, ParseSize::Simple(0x20)),
+                Endian::Big => (0x2acc, ParseSize::Simple(0x10)),
             }
         }
         "brgbw" => {
