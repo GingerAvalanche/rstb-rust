@@ -267,7 +267,6 @@ fn calc_or_estimate_from_bytes_and_name(
                             + size
                             + parse_size
                             + match ext {
-                                "baischedule" => 0x18,
                                 "beventpack" => 0xe0,
                                 "bfevfl" => 0x58,
                                 "hkrb" => 0x28,
@@ -282,7 +281,6 @@ fn calc_or_estimate_from_bytes_and_name(
                             + size
                             + parse_size
                             + match ext {
-                                "baischedule" => 0x20,
                                 "bdmgparam" => 0x68,
                                 "brgconfig" => 0x20,
                                 _ => 0,
