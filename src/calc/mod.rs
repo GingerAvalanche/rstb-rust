@@ -268,7 +268,6 @@ fn calc_or_estimate_from_bytes_and_name(
                             + parse_size
                             + match ext {
                                 "beventpack" => 0xe0,
-                                "bfevfl" => 0x58,
                                 "hkrb" => 0x28,
                                 _ => 0,
                             }
@@ -907,6 +906,74 @@ mod tests {
 
     #[cfg(feature = "complex_testing")]
     #[test]
+    fn test_all_bfevfl() {
+        use std::collections::HashSet;
+        use roead::sarc;
+
+        use glob::glob;
+
+        use crate::ResourceSizeTable;
+        let mut result: HashSet<String> = HashSet::new();
+        let mut overshot: i32 = -0x300000;
+        let mut undershot: i32 = 0x300000;
+
+        let update_path = get_update_path();
+        let rstb_path = update_path
+            .join("System")
+            .join("Resource")
+            .join("ResourceSizeTable.product.srsizetable");
+        let rstable = ResourceSizeTable::from_binary(
+                std::fs::read(rstb_path).unwrap()
+            ).unwrap();
+        for entry in glob(
+                update_path.join("Event")
+                    .join("*.sbeventpack")
+                    .to_string_lossy()
+                    .as_ref()
+            ).unwrap() {
+            match entry {
+                Ok(path) => {
+                    let actorname = path.file_stem().unwrap().to_str().unwrap();
+                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    for file in sarc.files() {
+                        let param_name = file.name.unwrap();
+                        if !param_name.ends_with(".bfevfl") | result.contains(param_name) {
+                            continue;
+                        }
+                        if let Some(rstb_entry) = rstable.get(param_name) {
+                            let calc_size = super::estimate_from_bytes_and_name(
+                                file.data,
+                                param_name,
+                                Endian::Big,
+                            )
+                            .unwrap();
+                            let current = calc_size as i32 - rstb_entry as i32;
+                            if current > 0 {
+                                println!("{}//{}: {}", actorname, param_name, current);
+                            }
+                            if overshot < current {
+                                overshot = current;
+                            }
+                            if undershot > current {
+                                undershot = current;
+                            }
+                            //assert_ge!(calc_size, rstb_entry);
+                            result.insert(param_name.to_string());
+                        } else {
+                            println!("{} not in RSTB???", &param_name);
+                            continue;
+                        }
+                    }
+                }
+                Err(_) => println!("File error...?"),
+            }
+        }
+        println!("Range (max amount of memory wasted with the overhead): {}", overshot - undershot);
+        println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
     fn test_all_bgparamlist() {
         test_all_of_type("GParamUser", "GeneralParamList", "bgparamlist");
     }
@@ -1461,6 +1528,74 @@ mod tests {
     #[test]
     fn test_all_bdrop_nx() {
         test_all_of_type_nx("DropTableUser", "DropTable", "bdrop");
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_all_bfevfl_nx() {
+        use std::collections::HashSet;
+        use roead::sarc;
+
+        use glob::glob;
+
+        use crate::ResourceSizeTable;
+        let mut result: HashSet<String> = HashSet::new();
+        let mut overshot: i32 = -0x300000;
+        let mut undershot: i32 = 0x300000;
+
+        let update_path = get_update_path_nx();
+        let rstb_path = update_path
+            .join("System")
+            .join("Resource")
+            .join("ResourceSizeTable.product.srsizetable");
+        let rstable = ResourceSizeTable::from_binary(
+                std::fs::read(rstb_path).unwrap()
+            ).unwrap();
+        for entry in glob(
+                update_path.join("Event")
+                    .join("*.sbeventpack")
+                    .to_string_lossy()
+                    .as_ref()
+            ).unwrap() {
+            match entry {
+                Ok(path) => {
+                    let actorname = path.file_stem().unwrap().to_str().unwrap();
+                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    for file in sarc.files() {
+                        let param_name = file.name.unwrap();
+                        if !param_name.ends_with(".bfevfl") | result.contains(param_name) {
+                            continue;
+                        }
+                        if let Some(rstb_entry) = rstable.get(param_name) {
+                            let calc_size = super::estimate_from_bytes_and_name(
+                                file.data,
+                                param_name,
+                                Endian::Little,
+                            )
+                            .unwrap();
+                            let current = calc_size as i32 - rstb_entry as i32;
+                            if current > 0 {
+                                println!("{}//{}: {}", actorname, param_name, current);
+                            }
+                            if overshot < current {
+                                overshot = current;
+                            }
+                            if undershot > current {
+                                undershot = current;
+                            }
+                            //assert_ge!(calc_size, rstb_entry);
+                            result.insert(param_name.to_string());
+                        } else {
+                            println!("{} not in RSTB???", &param_name);
+                            continue;
+                        }
+                    }
+                }
+                Err(_) => println!("File error...?"),
+            }
+        }
+        println!("Range (max amount of memory wasted with the overhead): {}", overshot - undershot);
+        println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
     }
 
     #[cfg(feature = "complex_testing")]
