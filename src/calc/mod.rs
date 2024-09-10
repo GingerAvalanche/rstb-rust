@@ -2507,6 +2507,33 @@ mod tests {
         }
         let mut rstable = ResourceSizeTable::from_binary(fs::read(rstb_backup).unwrap()).unwrap();
 
+        let bootup =
+            sarc::Sarc::new(fs::read(root.join("Pack").join("Bootup.pack")).unwrap()).unwrap();
+        for bootup_file in bootup.files() {
+            if let Some(name) = bootup_file.name {
+                if parsed.contains(name) {
+                    continue;
+                }
+                let entry = name.replace(".s", ".");
+                if let Some(ext) = Path::new(&entry).extension() {
+                    if ext == "byml" {
+                        if rstable.contains(entry.as_str()) {
+                            rstable.set(
+                                entry.as_str(),
+                                super::estimate_from_bytes_and_name(
+                                    bootup_file.data,
+                                    &entry,
+                                    Endian::Big,
+                                )
+                                .unwrap(),
+                            );
+                        }
+                    }
+                }
+                parsed.insert(name.to_owned());
+            }
+        }
+
         let titlebg =
             sarc::Sarc::new(fs::read(root.join("Pack").join("TitleBG.pack")).unwrap()).unwrap();
         for bg_file in titlebg.files() {
@@ -2517,6 +2544,18 @@ mod tests {
                 let entry = name.replace(".s", ".");
                 if let Some(ext) = Path::new(&entry).extension() {
                     if ext == "bfres" && name.contains("Tex") {
+                        if rstable.contains(entry.as_str()) {
+                            rstable.set(
+                                entry.as_str(),
+                                super::estimate_from_bytes_and_name(
+                                    bg_file.data,
+                                    &entry,
+                                    Endian::Big,
+                                )
+                                .unwrap(),
+                            );
+                        }
+                    } else if ext == "bdemo" {
                         if rstable.contains(entry.as_str()) {
                             rstable.set(
                                 entry.as_str(),
@@ -2551,18 +2590,60 @@ mod tests {
                                 | "baischedule"
                                 | "baniminfo"
                                 | "baslist"
+                                | "bawareness"
                                 | "bchemical"
                                 | "bdmgparam"
                                 | "bdrop"
                                 | "bgparamlist"
                                 | "blifecondition"
+                                | "blod"
                                 | "bmodellist"
                                 | "bphysics"
                                 | "bphyssb"
                                 | "brecipe"
                                 | "brgconfiglist"
                                 | "bshop"
+                                | "bumii"
                                 | "bxml"
+                                | "hkrb"
+                                | "hkrg"
+                                => {
+                                    rstable.set(
+                                        s_name,
+                                        super::estimate_from_bytes_and_name(
+                                            s_file.data,
+                                            s_name,
+                                            Endian::Big,
+                                        )
+                                        .unwrap(),
+                                    );
+                                }
+                                _ => {}
+                            }
+                            parsed.insert(s_name.to_owned());
+                        }
+                    } else if ext == "beventpack" {
+                        if true /*rstable.contains(entry.as_str())*/ {
+                            rstable.set(
+                                entry.as_str(),
+                                super::estimate_from_bytes_and_name(
+                                    bg_file.data,
+                                    &entry,
+                                    Endian::Big,
+                                )
+                                .unwrap(),
+                            );
+                        }
+                        let pack = sarc::Sarc::new(bg_file.data).unwrap();
+                        for s_file in pack.files() {
+                            let s_name = s_file.name.unwrap();
+                            if /* !rstable.contains(s_name) || */parsed.contains(s_name) {
+                                continue;
+                            }
+                            match Path::new(s_name).extension().unwrap().to_str().unwrap() {
+                                "bdemo"
+                                | "bfevfl"
+                                | "bfevtm"
                                 => {
                                     rstable.set(
                                         s_name,
@@ -2643,18 +2724,74 @@ mod tests {
                             | "baischedule"
                             | "baniminfo"
                             | "baslist"
+                            | "bawareness"
                             | "bchemical"
                             | "bdmgparam"
                             | "bdrop"
                             | "bgparamlist"
                             | "blifecondition"
+                            | "blod"
                             | "bmodellist"
                             | "bphysics"
                             | "bphyssb"
                             | "brecipe"
                             | "brgconfiglist"
                             | "bshop"
+                            | "bumii"
                             | "bxml"
+                            | "hkrb"
+                            | "hkrg"
+                            => {
+                                rstable.set(
+                                    s_name,
+                                    super::estimate_from_bytes_and_name(
+                                        s_file.data,
+                                        s_name,
+                                        Endian::Big,
+                                    )
+                                    .unwrap(),
+                                );
+                            }
+                            _ => {}
+                        }
+                        parsed.insert(s_name.to_owned());
+                    }
+                }
+                Err(_) => println!("File error...?"),
+            }
+        }
+
+        for entry in glob(
+                root.join("Event")
+                    .join("*.sbeventpack")
+                    .to_string_lossy()
+                    .as_ref()
+            ).unwrap() {
+            match entry {
+                Ok(path) => {
+                    let param_name = format!(
+                        "Event/{}.beventpack",
+                        path.file_stem().unwrap().to_str().unwrap()
+                    );
+                    let data = fs::read(&path).unwrap();
+                    if /*rstable.contains(param_name.as_str()) && */!parsed.contains(&param_name) {
+                        rstable.set(
+                            param_name.as_str(),
+                            super::estimate_from_bytes_and_name(&data, &param_name, Endian::Big)
+                                .unwrap(),
+                        );
+                        parsed.insert(param_name);
+                    }
+                    let pack = sarc::Sarc::new(data).unwrap();
+                    for s_file in pack.files() {
+                        let s_name = s_file.name.unwrap();
+                        if /* !rstable.contains(s_name) || */parsed.contains(s_name) {
+                            continue;
+                        }
+                        match Path::new(s_name).extension().unwrap().to_str().unwrap() {
+                            "bdemo"
+                            | "bfevfl"
+                            | "bfevtm"
                             => {
                                 rstable.set(
                                     s_name,
