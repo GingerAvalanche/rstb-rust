@@ -202,8 +202,8 @@ pub(crate) fn get_factory_info<S: AsRef<str>>(ext: S, endian: Endian) -> (u32, P
         }
         "bawareness" => {
             match endian {
-                Endian::Little => (0xb38, ParseSize::Simple(0)),
-                Endian::Big => (0x70c, ParseSize::Simple(0)),
+                Endian::Little => (0xb38, ParseSize::Simple(0x20)),
+                Endian::Big => (0x70c, ParseSize::Simple(0x10)),
             }
         }
         "bdrop" => {

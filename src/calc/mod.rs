@@ -888,6 +888,12 @@ mod tests {
 
     #[cfg(feature = "complex_testing")]
     #[test]
+    fn test_all_bawareness() {
+        test_all_of_type("AwarenessUser", "Awareness", "bawareness");
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
     fn test_all_bchemical() {
         test_all_of_type("ChemicalUser", "Chemical", "bchemical");
     }
@@ -1516,6 +1522,12 @@ mod tests {
     #[test]
     fn test_all_baslist_nx() {
         test_all_of_type_nx("ASUser", "ASList", "baslist");
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_all_bawareness_nx() {
+        test_all_of_type_nx("AwarenessUser", "Awareness", "bawareness");
     }
 
     #[cfg(feature = "complex_testing")]
