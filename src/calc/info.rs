@@ -328,8 +328,8 @@ pub(crate) fn get_factory_info<S: AsRef<str>>(ext: S, endian: Endian) -> (u32, P
         }
         "bfevtm" => {
             match endian {
-                Endian::Little => (0x40, ParseSize::Simple(0)),
-                Endian::Big => (0x24, ParseSize::Simple(0)),
+                Endian::Little => (0x40, ParseSize::Simple(0x18)),
+                Endian::Big => (0x24, ParseSize::Simple(0x38)),
             }
         }
         _ => {
