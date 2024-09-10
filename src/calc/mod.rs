@@ -986,6 +986,12 @@ mod tests {
 
     #[cfg(feature = "complex_testing")]
     #[test]
+    fn test_all_blod() {
+        test_all_of_type("LODUser", "LOD", "blod");
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
     fn test_all_bmodellist() {
         test_all_of_type("ModelUser", "ModelList", "bmodellist");
     }
@@ -1608,6 +1614,12 @@ mod tests {
     #[test]
     fn test_all_blifecondition_nx() {
         test_all_of_type_nx("LifeConditionUser", "LifeCondition", "blifecondition");
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_all_blod_nx() {
+        test_all_of_type_nx("LODUser", "LOD", "blod");
     }
 
     #[cfg(feature = "complex_testing")]
