@@ -270,7 +270,6 @@ fn calc_or_estimate_from_bytes_and_name(
                                 "beventpack" => 0xe0,
                                 "bfevfl" => 0x58,
                                 "hkrb" => 0x28,
-                                "bdmgparam" => 0x4c,
                                 "brgconfig" => 0x10,
                                 _ => 0,
                             }
@@ -281,7 +280,6 @@ fn calc_or_estimate_from_bytes_and_name(
                             + size
                             + parse_size
                             + match ext {
-                                "bdmgparam" => 0x68,
                                 "brgconfig" => 0x20,
                                 _ => 0,
                             }
