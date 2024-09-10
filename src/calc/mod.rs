@@ -1450,6 +1450,60 @@ mod tests {
 
     #[cfg(feature = "complex_testing")]
     #[test]
+    fn test_all_hkrb() {
+        use std::collections::HashSet;
+        use roead::sarc;
+
+        use glob::glob;
+
+        use crate::ResourceSizeTable;
+        let mut result: HashSet<String> = HashSet::new();
+
+        let update_path = get_update_path();
+        let rstb_path = update_path
+            .join("System")
+            .join("Resource")
+            .join("ResourceSizeTable.product.srsizetable");
+        let rstable = ResourceSizeTable::from_binary(
+                std::fs::read(rstb_path).unwrap()
+            ).unwrap();
+        for entry in glob(
+                update_path.join("Actor")
+                    .join("Pack")
+                    .join("*.sbactorpack")
+                    .to_string_lossy()
+                    .as_ref()
+            ).unwrap() {
+            match entry {
+                Ok(path) => {
+                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    for file in sarc.files() {
+                        let param_name = file.name.unwrap();
+                        if !param_name.ends_with(".hkrb") | result.contains(param_name) {
+                            continue;
+                        }
+                        if let Some(rstb_entry) = rstable.get(param_name) {
+                            let calc_size = super::estimate_from_bytes_and_name(
+                                file.data,
+                                param_name,
+                                Endian::Big,
+                            )
+                            .unwrap();
+                            assert_ge!(calc_size, rstb_entry + 0x48); // Vanilla entries are less than the required...?
+                            result.insert(param_name.to_string());
+                        } else {
+                            println!("{} not in RSTB???", &param_name);
+                            continue;
+                        }
+                    }
+                }
+                Err(_) => println!("File error...?"),
+            }
+        }
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
     fn test_all_hkrg() {
         use std::collections::HashSet;
         use roead::sarc;
@@ -2208,6 +2262,60 @@ mod tests {
                     } else {
                         println!("{} not in RSTB???", &param_name);
                         continue;
+                    }
+                }
+                Err(_) => println!("File error...?"),
+            }
+        }
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_all_hkrb_nx() {
+        use std::collections::HashSet;
+        use roead::sarc;
+
+        use glob::glob;
+
+        use crate::ResourceSizeTable;
+        let mut result: HashSet<String> = HashSet::new();
+
+        let update_path = get_update_path_nx();
+        let rstb_path = update_path
+            .join("System")
+            .join("Resource")
+            .join("ResourceSizeTable.product.srsizetable");
+        let rstable = ResourceSizeTable::from_binary(
+                std::fs::read(rstb_path).unwrap()
+            ).unwrap();
+        for entry in glob(
+                update_path.join("Actor")
+                    .join("Pack")
+                    .join("*.sbactorpack")
+                    .to_string_lossy()
+                    .as_ref()
+            ).unwrap() {
+            match entry {
+                Ok(path) => {
+                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    for file in sarc.files() {
+                        let param_name = file.name.unwrap();
+                        if !param_name.ends_with(".hkrb") | result.contains(param_name) {
+                            continue;
+                        }
+                        if let Some(rstb_entry) = rstable.get(param_name) {
+                            let calc_size = super::estimate_from_bytes_and_name(
+                                file.data,
+                                param_name,
+                                Endian::Little,
+                            )
+                            .unwrap();
+                            assert_ge!(calc_size, rstb_entry);
+                            result.insert(param_name.to_string());
+                        } else {
+                            println!("{} not in RSTB???", &param_name);
+                            continue;
+                        }
                     }
                 }
                 Err(_) => println!("File error...?"),
