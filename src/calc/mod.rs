@@ -54,7 +54,7 @@
 //! Wii U files, even if they are actually in little endian, and pass
 //! `Endian:Little` for Switch files, even if they are actually in big endian.
 
-#[cfg(feature = "complex_testing")]
+#[cfg(feature = "complex")]
 mod cpp_memsizes;
 mod info;
 
