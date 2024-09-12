@@ -76,6 +76,11 @@ fn round_64(size: usize) -> u32 {
     ((size as isize + 63) & -64) as u32
 }
 
+#[inline]
+fn align_to(size: u32, alignment: isize) -> u32 {
+    ((size as isize + (alignment-1)) & -alignment) as u32
+}
+
 /// Infallibly calculate an RSTB value from a file on disk, returning `None` if
 /// the type is not supported.
 pub fn calc_from_file<P: AsRef<Path>>(file: P, endian: Endian) -> Result<Option<u32>> {
@@ -130,7 +135,7 @@ fn calc_or_estimate_from_size_and_name(
                 }
             }
         };
-        let (size, parse_size) = get_factory_info(ext, endian);
+        let (size, _, parse_size) = get_factory_info(ext, endian);
         match parse_size {
             ParseSize::Simple(parse_size) => {
                 Some(match endian {
@@ -259,7 +264,7 @@ fn calc_or_estimate_from_bytes_and_name(
                 }
             }
         };
-        let (size, parse_size) = get_factory_info(ext, endian);
+        let (size, alignment, parse_size) = get_factory_info(ext, endian);
         match parse_size {
             ParseSize::Simple(parse_size) => {
                 Some(match endian {
@@ -285,9 +290,19 @@ fn calc_or_estimate_from_bytes_and_name(
                 if estimate {
                     match ext {
                         #[cfg(feature = "complex")]
-                        "baiprog" => Some(rounded + baiprog::parse_size(bytes, endian)?),
+                        "baiprog" => Some(
+                            rounded + align_to(
+                                baiprog::parse_size(bytes, endian)?,
+                                alignment
+                            )
+                        ),
                         #[cfg(feature = "complex")]
-                        "baniminfo" => Some(rounded + baniminfo::parse_size(bytes, endian)?),
+                        "baniminfo" => Some(
+                            rounded + align_to(
+                                baniminfo::parse_size(bytes, endian)?,
+                                alignment
+                            )
+                        ),
                         #[cfg(not(feature = "complex"))]
                         "baniminfo" => {
                             Some(
@@ -302,30 +317,90 @@ fn calc_or_estimate_from_bytes_and_name(
                             )
                         }
                         #[cfg(feature = "complex")]
-                        "baslist" => Some(rounded + baslist::parse_size(bytes, endian)?),
+                        "baslist" => Some(
+                            rounded + align_to(
+                                baslist::parse_size(bytes, endian)?,
+                                alignment
+                            )
+                        ),
                         #[cfg(feature = "complex")]
-                        "bchemical" => Some(rounded + bchemical::parse_size(bytes, endian)?),
+                        "bchemical" => Some(
+                            rounded + align_to(
+                                bchemical::parse_size(bytes, endian)?,
+                                alignment
+                            )
+                        ),
                         #[cfg(feature = "complex")]
-                        "bdrop" => Some(rounded + bdrop::parse_size(bytes, endian)?),
+                        "bdrop" => Some(
+                            rounded + align_to(
+                                bdrop::parse_size(bytes, endian)?,
+                                alignment
+                            )
+                        ),
                         "bfres" => Some(estimate_bfres(filesize, endian)),
                         #[cfg(feature = "complex")]
-                        "bgparamlist" => Some(rounded + bgparamlist::parse_size(bytes, endian)?),
+                        "bgparamlist" => Some(
+                            rounded + align_to(
+                                bgparamlist::parse_size(bytes, endian)?,
+                                alignment
+                            )
+                        ),
                         #[cfg(feature = "complex")]
-                        "blifecondition" => Some(rounded + blifecondition::parse_size(bytes, endian)?),
+                        "blifecondition" => Some(
+                            rounded + align_to(
+                                blifecondition::parse_size(bytes, endian)?,
+                                alignment
+                            )
+                        ),
                         #[cfg(feature = "complex")]
-                        "bmodellist" => Some(rounded + bmodellist::parse_size(bytes, endian)?),
+                        "bmodellist" => Some(
+                            rounded + align_to(
+                                bmodellist::parse_size(bytes, endian)?,
+                                alignment
+                            )
+                        ),
                         #[cfg(feature = "complex")]
-                        "bphysics" => Some(rounded + bphysics::parse_size(bytes, endian)?),
+                        "bphysics" => Some(
+                            rounded + align_to(
+                                bphysics::parse_size(bytes, endian)?,
+                                alignment
+                            )
+                        ),
                         #[cfg(feature = "complex")]
-                        "bphyssb" => Some(rounded + bphyssb::parse_size(bytes, endian)?),
+                        "bphyssb" => Some(
+                            rounded + align_to(
+                                bphyssb::parse_size(bytes, endian)?,
+                                alignment
+                            )
+                        ),
                         #[cfg(feature = "complex")]
-                        "brecipe" => Some(rounded + brecipe::parse_size(bytes, endian)?),
+                        "brecipe" => Some(
+                            rounded + align_to(
+                                brecipe::parse_size(bytes, endian)?,
+                                alignment
+                            )
+                        ),
                         #[cfg(feature = "complex")]
-                        "brgconfiglist" => Some(rounded + brgconfiglist::parse_size(bytes, endian)?),
+                        "brgconfiglist" => Some(
+                            rounded + align_to(
+                                brgconfiglist::parse_size(bytes, endian)?,
+                                alignment
+                            )
+                        ),
                         #[cfg(feature = "complex")]
-                        "bshop" => Some(rounded + bshop::parse_size(bytes, endian)?),
+                        "bshop" => Some(
+                            rounded + align_to(
+                                bshop::parse_size(bytes, endian)?,
+                                alignment
+                            )
+                        ),
                         #[cfg(feature = "complex")]
-                        "bxml" => Some(rounded + bxml::parse_size(bytes, endian)?),
+                        "bxml" => Some(
+                            rounded + align_to(
+                                bxml::parse_size(bytes, endian)?,
+                                alignment
+                            )
+                        ),
                         "hknm2" => {
                             Some(
                                 rounded
