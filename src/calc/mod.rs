@@ -270,7 +270,6 @@ fn calc_or_estimate_from_bytes_and_name(
                             + parse_size
                             + match ext {
                                 "beventpack" => 0xe0,
-                                "hkrb" => 0x28,
                                 _ => 0,
                             }
                     }
@@ -1491,7 +1490,7 @@ mod tests {
                                 Endian::Big,
                             )
                             .unwrap();
-                            assert_eq!(calc_size, rstb_entry + 0x48); // Vanilla entries are less than the required...?
+                            assert_eq!(calc_size, rstb_entry);
                             result.insert(param_name.to_string());
                         } else {
                             println!("{} not in RSTB???", &param_name);
