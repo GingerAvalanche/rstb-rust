@@ -1529,8 +1529,6 @@ mod tests {
         use glob::glob;
 
         use crate::ResourceSizeTable;
-        let mut overshot: i32 = -0x300000;
-        let mut undershot: i32 = 0x300000;
 
         let update_path = get_update_path();
         let rstb_path = update_path
@@ -1556,15 +1554,7 @@ mod tests {
                             Endian::Big,
                         )
                         .unwrap();
-                        let current = calc_size as i32 - rstb_entry as i32;
-                        println!("{}: {}", param_name, current);
-                        if overshot < current {
-                            overshot = current;
-                        }
-                        if undershot > current {
-                            undershot = current;
-                        }
-                        //assert_ge!(calc_size, rstb_entry);
+                        assert_eq!(calc_size, rstb_entry);
                     } else {
                         println!("{} not in RSTB???", &param_name);
                         continue;
@@ -1573,8 +1563,6 @@ mod tests {
                 Err(_) => println!("File error...?"),
             }
         }
-        println!("Range (max amount of memory wasted with the overhead): {}", overshot - undershot);
-        println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
     }
 
     #[cfg(feature = "complex_testing")]
@@ -2438,8 +2426,6 @@ mod tests {
         use glob::glob;
 
         use crate::ResourceSizeTable;
-        let mut overshot: i32 = -0x300000;
-        let mut undershot: i32 = 0x300000;
 
         let update_path = get_update_path_nx();
         let rstb_path = update_path
@@ -2465,15 +2451,7 @@ mod tests {
                                 Endian::Little,
                             )
                             .unwrap();
-                            let current = calc_size as i32 - rstb_entry as i32;
-                            println!("{}: {}", param_name, current);
-                            if overshot < current {
-                                overshot = current;
-                            }
-                            if undershot > current {
-                                undershot = current;
-                            }
-                            //assert_ge!(calc_size, rstb_entry);
+                            assert_eq!(calc_size, rstb_entry);
                         } else {
                             println!("{} not in RSTB???", &param_name);
                             continue;
@@ -2482,8 +2460,6 @@ mod tests {
                 Err(_) => println!("File error...?"),
             }
         }
-        println!("Range (max amount of memory wasted with the overhead): {}", overshot - undershot);
-        println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
     }
 
     #[cfg(feature = "complex_testing")]
