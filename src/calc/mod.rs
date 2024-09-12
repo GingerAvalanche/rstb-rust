@@ -269,20 +269,19 @@ fn calc_or_estimate_from_bytes_and_name(
             ParseSize::Simple(parse_size) => {
                 Some(match endian {
                     Endian::Big => {
-                        rounded
-                            + 0xe4
-                            + size
-                            + parse_size
-                            + match ext {
-                                "beventpack" => 0xe0,
-                                _ => 0,
-                            }
+                        match ext {
+                            "esetlist" => round_32(filesize) + 
+                                align_to(0xe4 + size + parse_size, alignment),
+                            _ => rounded
+                                + align_to(0xe4 + size + parse_size, alignment)
+                                + match ext {
+                                    "beventpack" => 0xe0,
+                                    _ => 0,
+                                }
+                        }
                     }
                     Endian::Little => {
-                        rounded
-                            + 0x168
-                            + size
-                            + parse_size
+                        rounded + align_to(0x168 + size + parse_size, alignment)
                     }
                 })
             }
@@ -1526,6 +1525,60 @@ mod tests {
 
     #[cfg(feature = "complex_testing")]
     #[test]
+    fn test_all_esetlist() {
+        use glob::glob;
+
+        use crate::ResourceSizeTable;
+        let mut overshot: i32 = -0x300000;
+        let mut undershot: i32 = 0x300000;
+
+        let update_path = get_update_path();
+        let rstb_path = update_path
+            .join("System")
+            .join("Resource")
+            .join("ResourceSizeTable.product.srsizetable");
+        let rstable = ResourceSizeTable::from_binary(
+                std::fs::read(rstb_path).unwrap()
+            ).unwrap();
+        for entry in glob(
+                update_path.join("Effect")
+                    .join("*.sesetlist")
+                    .to_string_lossy()
+                    .as_ref()
+            ).unwrap() {
+            match entry {
+                Ok(path) => {
+                    let param_name = format!("Effect/{filename}.esetlist", filename = path.file_stem().unwrap().to_str().unwrap());
+                    if let Some(rstb_entry) = rstable.get(param_name.as_ref()) {
+                        let calc_size = super::estimate_from_bytes_and_name(
+                            std::fs::read(&path).unwrap().as_ref(),
+                            param_name.as_ref(),
+                            Endian::Big,
+                        )
+                        .unwrap();
+                        let current = calc_size as i32 - rstb_entry as i32;
+                        println!("{}: {}", param_name, current);
+                        if overshot < current {
+                            overshot = current;
+                        }
+                        if undershot > current {
+                            undershot = current;
+                        }
+                        //assert_ge!(calc_size, rstb_entry);
+                    } else {
+                        println!("{} not in RSTB???", &param_name);
+                        continue;
+                    }
+                }
+                Err(_) => println!("File error...?"),
+            }
+        }
+        println!("Range (max amount of memory wasted with the overhead): {}", overshot - undershot);
+        println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
     fn test_all_hkrb() {
         use std::collections::HashSet;
         use roead::sarc;
@@ -2381,6 +2434,62 @@ mod tests {
                 Err(_) => println!("File error...?"),
             }
         }
+        println!("Range (max amount of memory wasted with the overhead): {}", overshot - undershot);
+        println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_all_esetlist_nx() {
+        use glob::glob;
+
+        use crate::ResourceSizeTable;
+        let mut overshot: i32 = -0x300000;
+        let mut undershot: i32 = 0x300000;
+
+        let update_path = get_update_path_nx();
+        let rstb_path = update_path
+            .join("System")
+            .join("Resource")
+            .join("ResourceSizeTable.product.srsizetable");
+        let rstable = ResourceSizeTable::from_binary(
+                std::fs::read(rstb_path).unwrap()
+            ).unwrap();
+        for entry in glob(
+                update_path.join("Effect")
+                    .join("*.sesetlist")
+                    .to_string_lossy()
+                    .as_ref()
+            ).unwrap() {
+            match entry {
+                Ok(path) => {
+                    let param_name = format!("Effect/{filename}.esetlist", filename = path.file_stem().unwrap().to_str().unwrap());
+                    if let Some(rstb_entry) = rstable.get(param_name.as_ref()) {
+                            let calc_size = super::estimate_from_bytes_and_name(
+                                std::fs::read(&path).unwrap().as_ref(),
+                                param_name.as_ref(),
+                                Endian::Little,
+                            )
+                            .unwrap();
+                            let current = calc_size as i32 - rstb_entry as i32;
+                            println!("{}: {}", param_name, current);
+                            if overshot < current {
+                                overshot = current;
+                            }
+                            if undershot > current {
+                                undershot = current;
+                            }
+                            //assert_ge!(calc_size, rstb_entry);
+                        } else {
+                            println!("{} not in RSTB???", &param_name);
+                            continue;
+                        }
+                }
+                Err(_) => println!("File error...?"),
+            }
+        }
+        println!("Range (max amount of memory wasted with the overhead): {}", overshot - undershot);
+        println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
     }
 
     #[cfg(feature = "complex_testing")]
