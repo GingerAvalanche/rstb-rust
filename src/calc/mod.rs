@@ -2420,11 +2420,7 @@ mod tests {
                             Endian::Little,
                         )
                         .unwrap();
-                        let current = calc_size as i32 - rstb_entry as i32;
-                        if current > 0 {
-                            println!("{}: {}", param_name, current);
-                        }
-                        assert_ge!(calc_size, rstb_entry);
+                        assert_eq!(calc_size, rstb_entry);
                         result.insert(param_name);
                     } else {
                         println!("{} not in RSTB???", &param_name);
@@ -2434,8 +2430,6 @@ mod tests {
                 Err(_) => println!("File error...?"),
             }
         }
-        println!("Range (max amount of memory wasted with the overhead): {}", overshot - undershot);
-        println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
     }
 
     #[cfg(feature = "complex_testing")]
