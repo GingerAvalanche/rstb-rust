@@ -223,5 +223,5 @@ fn get_ai_class_def<'a>(class_name: &'a str, type_: &'a str) -> &'a Byml {
         .as_map()
         .unwrap()
         .get(class_name)
-        .unwrap()
+        .unwrap_or_else(|| panic!("Unknown AI Program ClassName {class_name}"))
 }
