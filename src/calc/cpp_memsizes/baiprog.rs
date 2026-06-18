@@ -176,12 +176,20 @@ impl BaiprogMeta {
                     .as_map()
                     .unwrap()
                     .get("StaticInstParams")
-                    .unwrap()
+                    .unwrap_or_else(|| panic!("StaticInstParams not found in AI Program {type_} {class_name}"))
                     .as_array()
                     .unwrap() {
                     let map = byml.as_map().unwrap();
-                    let param_name = map.get("Name").unwrap().as_string().unwrap().as_str();
-                    let param_type = map.get("Type").unwrap().as_string().unwrap().as_str();
+                    let param_name = map.get("Name")
+                        .unwrap_or_else(|| panic!("Name not found in AIDef {class_name} StaticInstParams"))
+                        .as_string()
+                        .unwrap()
+                        .as_str();
+                    let param_type = map.get("Type")
+                        .unwrap_or_else(|| panic!("Type not found in AIDef {class_name} StaticInstParams"))
+                        .as_string()
+                        .unwrap()
+                        .as_str();
 
                     // Inconsistency: AIDefs cannot have UInt, as doGetDef doesn't have
                     // behavior for setting a param_type as AIDefParamType::UInt, but
@@ -219,7 +227,7 @@ fn get_ai_class_def<'a>(class_name: &'a str, type_: &'a str) -> &'a Byml {
         .as_map()
         .unwrap()
         .get::<str>(format!("{type_}s").as_str().as_ref())
-        .unwrap()
+        .unwrap_or_else(|| panic!("{type_} somehow missing from AIDef?"))
         .as_map()
         .unwrap()
         .get(class_name)
