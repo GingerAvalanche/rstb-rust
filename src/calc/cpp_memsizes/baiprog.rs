@@ -172,48 +172,49 @@ impl BaiprogMeta {
                 };
                 *size += sinst_num_params * ptr_size; // no size_t because these are just pointers
 
-                for byml in ai_class_def
+                if let Some(static_inst_params) = ai_class_def
                     .as_map()
                     .unwrap()
-                    .get("StaticInstParams")
-                    .unwrap_or_else(|| panic!("StaticInstParams not found in AI Program {type_} {class_name}"))
-                    .as_array()
-                    .unwrap() {
-                    let map = byml.as_map().unwrap();
-                    let param_name = map.get("Name")
-                        .unwrap_or_else(|| panic!("Name not found in AIDef {class_name} StaticInstParams"))
-                        .as_string()
-                        .unwrap()
-                        .as_str();
-                    let param_type = map.get("Type")
-                        .unwrap_or_else(|| panic!("Type not found in AIDef {class_name} StaticInstParams"))
-                        .as_string()
-                        .unwrap()
-                        .as_str();
+                    .get("StaticInstParams") {
+                    for byml in static_inst_params
+                        .as_array()
+                        .unwrap() {
+                        let map = byml.as_map().unwrap();
+                        let param_name = map.get("Name")
+                            .unwrap_or_else(|| panic!("Name not found in AIDef {class_name} StaticInstParams"))
+                            .as_string()
+                            .unwrap()
+                            .as_str();
+                        let param_type = map.get("Type")
+                            .unwrap_or_else(|| panic!("Type not found in AIDef {class_name} StaticInstParams"))
+                            .as_string()
+                            .unwrap()
+                            .as_str();
 
-                    // Inconsistency: AIDefs cannot have UInt, as doGetDef doesn't have
-                    // behavior for setting a param_type as AIDefParamType::UInt, but
-                    // the parser has behavior for them. Include it to match behavior
-                    if let Some(_) = sinst_obj.get(param_name) {
-                        *size += match (param_type, self.endian) {
-                            ("Bool", Endian::Big) => size_of::<Parameter<u32, bool>>(),
-                            ("Bool", Endian::Little) => size_of::<Parameter<u64, bool>>(),
-                            ("UInt", Endian::Big) => size_of::<Parameter<u32, u32>>(),
-                            ("UInt", Endian::Little) => size_of::<Parameter<u64, u32>>(),
-                            ("Int", Endian::Big) => size_of::<Parameter<u32, i32>>(),
-                            ("Int", Endian::Little) => size_of::<Parameter<u64, i32>>(),
-                            ("Float", Endian::Big) => size_of::<Parameter<u32, f32>>(),
-                            ("Float", Endian::Little) => size_of::<Parameter<u64, f32>>(),
-                            ("String", Endian::Big) =>
-                                size_of::<Parameter<u32, sead::SafeString<u32>>>(),
-                            ("String", Endian::Little) =>
-                                size_of::<Parameter<u64, sead::SafeString<u64>>>(),
-                            ("Vec3", Endian::Big) =>
-                                size_of::<Parameter<u32, sead::Vector3f>>(),
-                            ("Vec3", Endian::Little) =>
-                                size_of::<Parameter<u64, sead::Vector3f>>(),
-                            _ => 0,
-                        };
+                        // Inconsistency: AIDefs cannot have UInt, as doGetDef doesn't have
+                        // behavior for setting a param_type as AIDefParamType::UInt, but
+                        // the parser has behavior for them. Include it to match behavior
+                        if let Some(_) = sinst_obj.get(param_name) {
+                            *size += match (param_type, self.endian) {
+                                ("Bool", Endian::Big) => size_of::<Parameter<u32, bool>>(),
+                                ("Bool", Endian::Little) => size_of::<Parameter<u64, bool>>(),
+                                ("UInt", Endian::Big) => size_of::<Parameter<u32, u32>>(),
+                                ("UInt", Endian::Little) => size_of::<Parameter<u64, u32>>(),
+                                ("Int", Endian::Big) => size_of::<Parameter<u32, i32>>(),
+                                ("Int", Endian::Little) => size_of::<Parameter<u64, i32>>(),
+                                ("Float", Endian::Big) => size_of::<Parameter<u32, f32>>(),
+                                ("Float", Endian::Little) => size_of::<Parameter<u64, f32>>(),
+                                ("String", Endian::Big) =>
+                                    size_of::<Parameter<u32, sead::SafeString<u32>>>(),
+                                ("String", Endian::Little) =>
+                                    size_of::<Parameter<u64, sead::SafeString<u64>>>(),
+                                ("Vec3", Endian::Big) =>
+                                    size_of::<Parameter<u32, sead::Vector3f>>(),
+                                ("Vec3", Endian::Little) =>
+                                    size_of::<Parameter<u64, sead::Vector3f>>(),
+                                _ => 0,
+                            };
+                        }
                     }
                 }
             }
