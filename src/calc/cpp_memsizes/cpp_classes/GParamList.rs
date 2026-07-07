@@ -22,7 +22,7 @@ pub struct GParamListObjectAirWall<T> {
 #[repr(C)]
 pub struct GParamListObjectAnimalFollowOffset<T> {
     base:   GParamListObj<T>,
-    mLayer: agl::Parameter<T, sead::SafeString<T>>,
+    mEatLocalOffset: agl::Parameter<T, sead::Vector3f>,
 }
 
 #[repr(C)]
