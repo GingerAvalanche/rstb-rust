@@ -143,7 +143,7 @@ mod tests {
 
     #[test]
     fn aslist_size_tests() {
-        assert_eq!(std::mem::size_of::<ASList::ASDefine<u32>>(), 0x50);
+        assert_eq!(std::mem::size_of::<ASList::ASDefine<u32>>(), 0x48);
         assert_eq!(std::mem::size_of::<ASList::ASDefine<u64>>(), 0x88);
         assert_eq!(std::mem::size_of::<ASList::CFPost<u32>>(), 0x50);
         assert_eq!(std::mem::size_of::<ASList::CFPost<u64>>(), 0x98);
@@ -187,7 +187,7 @@ mod tests {
         assert_eq!(std::mem::size_of::<GParamList::GParamListObj<u64>>(), 0x38);
         assert_eq!(std::mem::size_of::<GParamList::GParamListObjectAirWall<u32>>(), 0x34);
         assert_eq!(std::mem::size_of::<GParamList::GParamListObjectAirWall<u64>>(), 0x60);
-        assert_eq!(std::mem::size_of::<GParamList::GParamListObjectAnimalFollowOffset<u32>>(), 0x34);
+        assert_eq!(std::mem::size_of::<GParamList::GParamListObjectAnimalFollowOffset<u32>>(), 0x38);
         assert_eq!(std::mem::size_of::<GParamList::GParamListObjectAnimalFollowOffset<u64>>(), 0x60);
         assert_eq!(std::mem::size_of::<GParamList::GParamListObjectAnimalUnit<u32>>(), 0x134);
         assert_eq!(std::mem::size_of::<GParamList::GParamListObjectAnimalUnit<u64>>(), 0x260);
