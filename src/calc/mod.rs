@@ -583,8 +583,9 @@ mod tests {
 
     fn get_update_path() -> PathBuf {
         use ryml::Tree;
+        use dirs2::config_dir;
 
-        let settings_path = dirs2::data_dir()
+        let settings_path = config_dir()
             .unwrap()
             .join("ukmm")
             .join("settings.yml");
@@ -607,8 +608,9 @@ mod tests {
 
     fn get_update_path_nx() -> PathBuf {
         use ryml::Tree;
+        use dirs2::config_dir;
 
-        let settings_path = dirs2::data_dir()
+        let settings_path = config_dir()
             .unwrap()
             .join("ukmm")
             .join("settings.yml");
@@ -1775,6 +1777,70 @@ mod tests {
                 Err(_) => println!("File error...?"),
             }
         }
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_all_hksc() {
+        use std::collections::HashSet;
+
+        use glob::glob;
+
+        use crate::ResourceSizeTable;
+        let mut result: HashSet<String> = HashSet::new();
+        let mut overshot: i32 = -0x300000;
+        let mut undershot: i32 = 0x300000;
+
+        let update_path = get_update_path();
+        let rstb_path = update_path
+            .join("System")
+            .join("Resource")
+            .join("ResourceSizeTable.product.srsizetable");
+        let rstable = ResourceSizeTable::from_binary(
+            std::fs::read(rstb_path).unwrap()
+        ).unwrap();
+        for entry in glob(
+            update_path.join("Physics")
+                .join("StaticCompound")
+                .join("MainField")
+                .join("*.shksc")
+                .to_string_lossy()
+                .as_ref()
+        ).unwrap() {
+            match entry {
+                Ok(path) => {
+                    let canonical = path.strip_prefix(&update_path)
+                        .unwrap()
+                        .to_string_lossy()
+                        .replace(".s", ".");
+                    if let Some(rstb_entry) = rstable.get(canonical.as_str()) {
+                        let calc_size = super::estimate_from_bytes_and_name(
+                            &*read(&path).unwrap(),
+                            path.to_str().unwrap(),
+                            Endian::Big,
+                        ).unwrap();
+                        let current = calc_size as i32 - rstb_entry as i32;
+                        if current > 0 {
+                            println!("{}: {}", canonical, current);
+                        }
+                        if overshot < current {
+                            overshot = current;
+                        }
+                        if undershot > current {
+                            undershot = current;
+                        }
+                        assert_ge!(calc_size, rstb_entry);
+                        result.insert(canonical);
+                    } else {
+                        println!("{} not in RSTB???", &canonical);
+                        continue;
+                    }
+                }
+                Err(_) => println!("File error...?"),
+            }
+        }
+        println!("Range (max amount of memory wasted with the overhead): {}", overshot - undershot);
+        println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
     }
 
     #[cfg(feature = "complex_testing")]
