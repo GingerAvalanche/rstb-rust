@@ -3022,7 +3022,7 @@ mod tests {
                             );
                         }
                     } else if ext == "bactorpack" {
-                        if true /*rstable.contains(entry.as_str())*/ {
+                        if rstable.contains(entry.as_str()) {
                             rstable.set(
                                 entry.as_str(),
                                 super::estimate_from_bytes_and_name(
@@ -3077,7 +3077,7 @@ mod tests {
                             parsed.insert(s_name.to_owned());
                         }
                     } else if ext == "beventpack" {
-                        if true /*rstable.contains(entry.as_str())*/ {
+                        if rstable.contains(entry.as_str()) {
                             rstable.set(
                                 entry.as_str(),
                                 super::estimate_from_bytes_and_name(
