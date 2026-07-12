@@ -28,7 +28,7 @@ roead = { git = "https://github.com/NiceneNerd/roead.git", features = [
     "sarc",
     "yaml"
 ], optional = true }
-ryml = { version = "0.3.2", features = ["std"] }
+ryml = { git = "https://github.com/GingerAvalanche/ryml.git", branch = "no_std_io2", features = ["std"] }
 serde = { version = "1", optional = true, features = ["derive"] }
 serde_json = { version = "1", optional = true }
 thiserror = "1"
