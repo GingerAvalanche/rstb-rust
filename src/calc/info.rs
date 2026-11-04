@@ -338,6 +338,12 @@ pub(crate) fn get_factory_info<S: AsRef<str>>(ext: S, endian: Endian) -> (u32, i
                 Endian::Big => (0x24, 0x4, ParseSize::Simple(0x38)),
             }
         }
+        "mubin" => {
+            match endian {
+                Endian::Little => (0x38, 0x8, ParseSize::Simple(0x20)),
+                Endian::Big => (0x20, 0x4, ParseSize::Simple(0x1C)),
+            }
+        }
         _ => {
             match endian {
                 Endian::Little => (0x38, 0x8, ParseSize::Simple(0)),
