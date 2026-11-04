@@ -270,7 +270,7 @@ fn calc_or_estimate_from_bytes_and_name(
                 Some(match endian {
                     Endian::Big => {
                         match ext {
-                            "esetlist" => round_32(filesize) + 
+                            "esetlist" | "mubin" => round_32(filesize) +
                                 align_to(0xe4 + size + parse_size, alignment),
                             _ => rounded
                                 + align_to(0xe4 + size + parse_size, alignment)
@@ -1948,14 +1948,11 @@ mod tests {
     #[test]
     fn test_all_dlc_mainfield_mubin() {
         use std::collections::HashSet;
-        use roead::sarc;
 
         use glob::glob;
 
         use crate::ResourceSizeTable;
         let mut result: HashSet<String> = HashSet::new();
-        let mut overshot: i32 = -0x300000;
-        let mut undershot: i32 = 0x300000;
 
         let dlc_path = get_dlc_path();
         let rstb_path = get_update_path()
@@ -2002,15 +1999,7 @@ mod tests {
                                 Endian::Big,
                             )
                                 .unwrap();
-                            let current = calc_size as i32 - rstb_entry as i32;
-                            println!("{}: {}", &canonical, current);
-                            if overshot < current {
-                                overshot = current;
-                            }
-                            if undershot > current {
-                                undershot = current;
-                            }
-                            //assert_ge!(calc_size, rstb_entry);
+                            assert_eq!(calc_size, rstb_entry);
                             result.insert(canonical);
                         } else {
                             println!("{} not in RSTB???", &canonical);
@@ -2021,8 +2010,6 @@ mod tests {
                 }
             }
         }
-        println!("Range (max amount of memory wasted with the overhead): {}", overshot - undershot);
-        println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
     }
 
     #[cfg(feature = "complex_testing")]
@@ -3044,14 +3031,11 @@ mod tests {
     #[test]
     fn test_all_dlc_mainfield_mubin_nx() {
         use std::collections::HashSet;
-        use roead::sarc;
 
         use glob::glob;
 
         use crate::ResourceSizeTable;
         let mut result: HashSet<String> = HashSet::new();
-        let mut overshot: i32 = -0x300000;
-        let mut undershot: i32 = 0x300000;
 
         let dlc_path = get_dlc_path_nx();
         let rstb_path = get_update_path_nx()
@@ -3098,15 +3082,7 @@ mod tests {
                                 Endian::Little,
                             )
                                 .unwrap();
-                            let current = calc_size as i32 - rstb_entry as i32;
-                            println!("{}: {}", &canonical, current);
-                            if overshot < current {
-                                overshot = current;
-                            }
-                            if undershot > current {
-                                undershot = current;
-                            }
-                            //assert_ge!(calc_size, rstb_entry);
+                            assert_eq!(calc_size, rstb_entry);
                             result.insert(canonical);
                         } else {
                             println!("{} not in RSTB???", &canonical);
@@ -3117,8 +3093,6 @@ mod tests {
                 }
             }
         }
-        println!("Range (max amount of memory wasted with the overhead): {}", overshot - undershot);
-        println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
     }
 
     #[cfg(feature = "complex_testing")]
