@@ -606,6 +606,31 @@ mod tests {
         PathBuf::from(source_node.get("update_dir").unwrap().val().unwrap())
     }
 
+    fn get_dlc_path() -> PathBuf {
+        use ryml::Tree;
+        use dirs2::config_dir;
+
+        let settings_path = config_dir()
+            .unwrap()
+            .join("ukmm")
+            .join("settings.yml");
+        let settings = Tree::parse(
+            std::fs::read_to_string(settings_path).unwrap()
+        ).unwrap();
+        let source_node = settings.root_ref()
+            .unwrap()
+            .get("wiiu_config")
+            .unwrap()
+            .get("dump")
+            .unwrap()
+            .get("source")
+            .unwrap();
+
+        assert_eq!(source_node.get("type").unwrap().val().unwrap(), "Unpacked");
+
+        PathBuf::from(source_node.get("aoc_dir").unwrap().val().unwrap())
+    }
+
     fn get_update_path_nx() -> PathBuf {
         use ryml::Tree;
         use dirs2::config_dir;
@@ -629,6 +654,31 @@ mod tests {
         assert_eq!(source_node.get("type").unwrap().val().unwrap(), "Unpacked");
 
         PathBuf::from(source_node.get("content_dir").unwrap().val().unwrap())
+    }
+
+    fn get_dlc_path_nx() -> PathBuf {
+        use ryml::Tree;
+        use dirs2::config_dir;
+
+        let settings_path = config_dir()
+            .unwrap()
+            .join("ukmm")
+            .join("settings.yml");
+        let settings = Tree::parse(
+            std::fs::read_to_string(settings_path).unwrap()
+        ).unwrap();
+        let source_node = settings.root_ref()
+            .unwrap()
+            .get("switch_config")
+            .unwrap()
+            .get("dump")
+            .unwrap()
+            .get("source")
+            .unwrap();
+
+        assert_eq!(source_node.get("type").unwrap().val().unwrap(), "Unpacked");
+
+        PathBuf::from(source_node.get("aoc_dir").unwrap().val().unwrap())
     }
 
     #[test]
@@ -1895,6 +1945,87 @@ mod tests {
     }
 
     #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_all_dlc_mainfield_mubin() {
+        use std::collections::HashSet;
+        use roead::sarc;
+
+        use glob::glob;
+
+        use crate::ResourceSizeTable;
+        let mut result: HashSet<String> = HashSet::new();
+        let mut overshot: i32 = -0x300000;
+        let mut undershot: i32 = 0x300000;
+
+        let dlc_path = get_dlc_path();
+        let rstb_path = get_update_path()
+            .join("System")
+            .join("Resource")
+            .join("ResourceSizeTable.product.srsizetable");
+        let rstable = ResourceSizeTable::from_binary(
+            std::fs::read(rstb_path).unwrap()
+        ).unwrap();
+        let mut globs = Vec::new();
+        globs.push(glob(
+            dlc_path.join("Map")
+                .join("MainField")
+                .join("*.smubin")
+                .to_string_lossy()
+                .as_ref()
+        ));
+        for x in 'A'..'K' {
+            for y in 0..9 {
+                globs.push(glob(
+                    dlc_path.join("Map")
+                        .join("MainField")
+                        .join(format!("{}-{}", x, y))
+                        .join("*.smubin")
+                        .to_string_lossy()
+                        .as_ref()
+                ));
+            }
+        }
+        for glob in globs {
+            for entry in glob.unwrap() {
+                match entry {
+                    Ok(path) => {
+                        let temp = path.strip_prefix(&dlc_path).unwrap().with_extension("mubin");
+                        let canonical = format!("Aoc/0010/{}", temp.to_str().unwrap());
+                        let data = read(&path).unwrap();
+                        if result.contains(&canonical) {
+                            continue;
+                        }
+                        if let Some(rstb_entry) = rstable.get(canonical.as_ref()) {
+                            let calc_size = super::estimate_from_bytes_and_name(
+                                &data,
+                                &canonical,
+                                Endian::Big,
+                            )
+                                .unwrap();
+                            let current = calc_size as i32 - rstb_entry as i32;
+                            println!("{}: {}", &canonical, current);
+                            if overshot < current {
+                                overshot = current;
+                            }
+                            if undershot > current {
+                                undershot = current;
+                            }
+                            //assert_ge!(calc_size, rstb_entry);
+                            result.insert(canonical);
+                        } else {
+                            println!("{} not in RSTB???", &canonical);
+                            continue;
+                        }
+                    }
+                    Err(_) => println!("File error...?"),
+                }
+            }
+        }
+        println!("Range (max amount of memory wasted with the overhead): {}", overshot - undershot);
+        println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
+    }
+
+    #[cfg(feature = "complex_testing")]
     fn test_all_of_type_assert_nx(link: &str, folder: &str, ext: &str) {
         use std::collections::HashSet;
         use roead::{aamp::ParameterIO, sarc};
@@ -2902,6 +3033,87 @@ mod tests {
                 } else {
                     println!("{} not in RSTB???", name);
                     continue;
+                }
+            }
+        }
+        println!("Range (max amount of memory wasted with the overhead): {}", overshot - undershot);
+        println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
+    }
+
+    #[cfg(feature = "complex_testing")]
+    #[test]
+    fn test_all_dlc_mainfield_mubin_nx() {
+        use std::collections::HashSet;
+        use roead::sarc;
+
+        use glob::glob;
+
+        use crate::ResourceSizeTable;
+        let mut result: HashSet<String> = HashSet::new();
+        let mut overshot: i32 = -0x300000;
+        let mut undershot: i32 = 0x300000;
+
+        let dlc_path = get_dlc_path_nx();
+        let rstb_path = get_update_path_nx()
+            .join("System")
+            .join("Resource")
+            .join("ResourceSizeTable.product.srsizetable");
+        let rstable = ResourceSizeTable::from_binary(
+            std::fs::read(rstb_path).unwrap()
+        ).unwrap();
+        let mut globs = Vec::new();
+        globs.push(glob(
+            dlc_path.join("Map")
+                .join("MainField")
+                .join("*.smubin")
+                .to_string_lossy()
+                .as_ref()
+        ));
+        for x in 'A'..'K' {
+            for y in 0..9 {
+                globs.push(glob(
+                    dlc_path.join("Map")
+                        .join("MainField")
+                        .join(format!("{}-{}", x, y))
+                        .join("*.smubin")
+                        .to_string_lossy()
+                        .as_ref()
+                ));
+            }
+        }
+        for glob in globs {
+            for entry in glob.unwrap() {
+                match entry {
+                    Ok(path) => {
+                        let temp = path.strip_prefix(&dlc_path).unwrap().with_extension("mubin");
+                        let canonical = format!("Aoc/0010/{}", temp.to_str().unwrap());
+                        let data = read(&path).unwrap();
+                        if result.contains(&canonical) {
+                            continue;
+                        }
+                        if let Some(rstb_entry) = rstable.get(canonical.as_ref()) {
+                            let calc_size = super::estimate_from_bytes_and_name(
+                                &data,
+                                &canonical,
+                                Endian::Little,
+                            )
+                                .unwrap();
+                            let current = calc_size as i32 - rstb_entry as i32;
+                            println!("{}: {}", &canonical, current);
+                            if overshot < current {
+                                overshot = current;
+                            }
+                            if undershot > current {
+                                undershot = current;
+                            }
+                            //assert_ge!(calc_size, rstb_entry);
+                            result.insert(canonical);
+                        } else {
+                            println!("{} not in RSTB???", &canonical);
+                            continue;
+                        }
+                    }
+                    Err(_) => println!("File error...?"),
                 }
             }
         }
