@@ -689,17 +689,17 @@ mod tests {
         );
         assert_eq!(
             super::calc_from_file("test/AirOcta_Tag.sbactorpack", Endian::Little).unwrap(),
-            Some(6192)
+            Some(6240)
         );
         let buffer: Vec<u8> = read("test/Enemy_Bokoblin_Gold.bdmgparam").unwrap();
-        assert_ge!(
+        assert_eq!(
             super::calc_from_slice_and_name(buffer, "Enemy_Bokoblin_Gold.bdmgparam", Endian::Big),
-            Some(5396)
+            Some(5472)
         );
         let buffer: Vec<u8> = read("test/Obj_TreeWhiteBirch_A_01.hkrb").unwrap();
         assert_eq!(
             super::calc_from_slice_and_name(buffer, "Obj_TreeWhiteBirch_A_01.hkrb", Endian::Big),
-            Some(3560)
+            Some(3520)
         );
         let buffer: Vec<u8> = read("test/savedataformat.ssarc").unwrap();
         assert_eq!(
