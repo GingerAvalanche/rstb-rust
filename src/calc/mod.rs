@@ -127,16 +127,7 @@ fn calc_or_estimate_from_size_and_name(
     if let Some(dot_pos) = name.find('.') {
         let rounded = round_32(filesize);
         let raw_ext = &name[dot_pos + 1..];
-        let ext = match raw_ext {
-            "sarc" => "sarc",
-            _ => {
-                if let Some(ext) = raw_ext.strip_prefix('s') {
-                    ext
-                } else {
-                    raw_ext
-                }
-            }
-        };
+        let ext = raw_ext.strip_s().canon_to_factory();
         let (size, _, parse_size) = get_factory_info(ext, endian, &Vec::new());
         match parse_size {
             ParseSize::Simple(parse_size) => {
@@ -253,25 +244,7 @@ fn calc_or_estimate_from_bytes_and_name(
             Endian::Little => round_32(filesize),
         };
         let raw_ext = &name[dot_pos + 1..];
-        let ext = match raw_ext {
-            "sarc" => "sarc",
-            "Tex.sbfres" => "Tex.bfres",
-            "Tex1.sbfres" => "Tex1.bfres",
-            "Tex2.sbfres" => "Tex2.bfres",
-            "product.byml" => "byml",
-            "product.sbyml" => "byml",
-            "hght.sstera" => "stera",
-            "mate.sstera" => "stera",
-            "grass.extm.sstera" => "stera",
-            "water.extm.sstera" => "stera",
-            _ => {
-                if let Some(ext) = raw_ext.strip_prefix('s') {
-                    ext
-                } else {
-                    raw_ext
-                }
-            }
-        };
+        let ext = raw_ext.strip_s().canon_to_factory();
         let parse_const = match endian {
             Endian::Big => PARSE_CONST_WIIU,
             Endian::Little => PARSE_CONST_NX,
@@ -457,6 +430,48 @@ fn estimate_bfres(filesize: usize, endian: Endian) -> u32 {
                 }
             }
         }) as u32
+}
+
+trait FactoryConversion<'a> {
+    fn strip_s(self) -> &'a str;
+
+    fn canon_to_factory(self) -> &'a str;
+}
+
+impl<'a> FactoryConversion<'a> for &'a str {
+    #[inline]
+    fn strip_s(self) -> &'a str {
+        match self {
+            "sarc" => "sarc",
+            "Tex.sbfres" => "Tex.bfres",
+            "Tex1.sbfres" => "Tex1.bfres",
+            "Tex2.sbfres" => "Tex2.bfres",
+            "product.sbyml" => "product.byml",
+            "hght.sstera" => "hght.stera",
+            "mate.sstera" => "mate.stera",
+            "grass.extm.sstera" => "grass.extm.stera",
+            "water.extm.sstera" => "water.extm.stera",
+            _ => {
+                if let Some(ext) = self.strip_prefix('s') {
+                    ext
+                } else {
+                    self
+                }
+            }
+        }
+    }
+
+    #[inline]
+    fn canon_to_factory(self) -> &'a str {
+        match self {
+            "product.byml" => "byml",
+            "hght.stera" => "stera",
+            "mate.stera" => "stera",
+            "grass.extm.stera" => "stera",
+            "water.extm.stera" => "stera",
+            _ => self,
+        }
+    }
 }
 
 #[cfg(test)]
