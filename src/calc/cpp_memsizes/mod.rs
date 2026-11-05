@@ -14,9 +14,6 @@ pub mod bshop;
 pub mod bxml;
 pub mod cpp_classes;
 
-const PARSE_CONST_WIIU: usize = 0xe4;
-const PARSE_CONST_NX: usize = 0x168;
-
 const ITER_CONST_WIIU: usize = 0x10;
 const ITER_CONST_NX: usize = 0x20;
 

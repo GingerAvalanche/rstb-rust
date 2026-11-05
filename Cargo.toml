@@ -27,7 +27,7 @@ roead = { git = "https://github.com/GingerAvalanche/roead.git", features = [
     "yaz0",
     "sarc",
     "yaml"
-], optional = true }
+] }
 ryml = { git = "https://github.com/GingerAvalanche/ryml.git", branch = "no_std_io2", features = ["std"] }
 serde = { version = "1", optional = true, features = ["derive"] }
 serde_json = { version = "1", optional = true }
@@ -40,5 +40,3 @@ all_asserts = "2.3.0"
 [features]
 json = ["serde", "serde_json"]
 botw-data = ["include-flate", "json"]
-complex = ["roead", "phf"]
-complex_testing = ["roead", "glob"]

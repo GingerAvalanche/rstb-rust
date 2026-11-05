@@ -1,20 +1,18 @@
 use roead::aamp::ParameterIO;
 
 use crate::Endian;
-use super::cpp_classes::ActorLink::ActorLink;
 
-const CLASS_SIZE_WIIU: usize = std::mem::size_of::<ActorLink<u32>>();
-const CLASS_SIZE_NX: usize = std::mem::size_of::<ActorLink<u64>>();
-
-const TAG_SIZE: usize = std::mem::size_of::<u32>();
+const TAG_SIZE: usize = size_of::<u32>();
 
 const BASE_OVERHEAD_WIIU: usize = 0x34;
 const BASE_OVERHEAD_NX: usize = 0x20;
 
 pub fn parse_size(bytes: &[u8], endian: Endian) -> Option<u32> {
+    if bytes.len()  == 0 { return None; }
+
     let mut total_size: usize = match endian {
-        Endian::Big => super::PARSE_CONST_WIIU + CLASS_SIZE_WIIU + BASE_OVERHEAD_WIIU,
-        Endian::Little => super::PARSE_CONST_NX + CLASS_SIZE_NX + BASE_OVERHEAD_NX,
+        Endian::Big => BASE_OVERHEAD_WIIU,
+        Endian::Little => BASE_OVERHEAD_NX,
     };
     let a = ParameterIO::from_binary(bytes).ok()?;
     let iter_const = match endian {

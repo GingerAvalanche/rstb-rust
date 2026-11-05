@@ -40,7 +40,6 @@ struct Resource<T> {
     mContext:       T,                          // Context*
 }
 
-#[cfg(feature = "complex")]
 #[cfg(test)]
 mod tests {
     use crate::calc::cpp_memsizes::cpp_classes::*;

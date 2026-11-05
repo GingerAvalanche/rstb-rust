@@ -54,17 +54,17 @@
 //! Wii U files, even if they are actually in little endian, and pass
 //! `Endian:Little` for Switch files, even if they are actually in big endian.
 
-#[cfg(feature = "complex")]
 mod cpp_memsizes;
 mod info;
 
 use std::path::Path;
 
-#[cfg(feature = "complex")]
-use cpp_memsizes::*;
 use info::{get_factory_info, ParseSize};
 
 use crate::{Endian, Result};
+
+const PARSE_CONST_WIIU: u32 = 0xe4;
+const PARSE_CONST_NX: u32 = 0x168;
 
 #[inline]
 fn round_32(size: usize) -> u32 {
@@ -112,6 +112,8 @@ pub fn calc_from_slice_and_name<B: AsRef<[u8]>>(
 
 /// Infallibly calculate an RSTB value from an uncompressed file size and
 /// filename, returning `None` if the type is not supported.
+/// Note that if you need a calculated size from a complex type, you need
+/// to use a function that takes a slice or file (to read bytes from disk)
 pub fn calc_from_size_and_name(filesize: usize, name: &str, endian: Endian) -> Option<u32> {
     calc_or_estimate_from_size_and_name(filesize, name, endian, false)
 }
@@ -135,13 +137,13 @@ fn calc_or_estimate_from_size_and_name(
                 }
             }
         };
-        let (size, _, parse_size) = get_factory_info(ext, endian);
+        let (size, _, parse_size) = get_factory_info(ext, endian, &Vec::new());
         match parse_size {
             ParseSize::Simple(parse_size) => {
                 Some(match endian {
                     Endian::Big => {
                         rounded
-                            + 0xe4
+                            + PARSE_CONST_WIIU
                             + size
                             + parse_size
                             + match ext {
@@ -154,7 +156,7 @@ fn calc_or_estimate_from_size_and_name(
                     }
                     Endian::Little => {
                         rounded
-                            + 0x168
+                            + PARSE_CONST_NX
                             + size
                             + parse_size
                             + match ext {
@@ -164,14 +166,14 @@ fn calc_or_estimate_from_size_and_name(
                     }
                 })
             }
-            ParseSize::Complex => {
+            ParseSize::Complex(_parse_size) => {
                 if estimate {
                     match ext {
                         "baniminfo" => {
                             Some(
                                 ((rounded as f32 * (if filesize > 36864 { 1.5 } else { 4.0 }))
                                     as u32
-                                    + 0xe4
+                                    + PARSE_CONST_WIIU
                                     + 0x24c)
                                     * match endian {
                                         Endian::Big => 1,
@@ -208,6 +210,8 @@ pub fn estimate_from_file<P: AsRef<Path>>(file: P, endian: Endian) -> Result<Opt
 
 /// Infallibly calculate *or* estimate an RSTB value from an uncompressed file size and
 /// filename, returning `None` if the type is not supported.
+/// Note that if you need a calculated size from a complex type, you need
+/// to use a function that takes a slice or file (to read bytes from disk)
 pub fn estimate_from_size_and_name(filesize: usize, name: &str, endian: Endian) -> Option<u32> {
     calc_or_estimate_from_size_and_name(filesize, name, endian, true)
 }
@@ -264,16 +268,20 @@ fn calc_or_estimate_from_bytes_and_name(
                 }
             }
         };
-        let (size, alignment, parse_size) = get_factory_info(ext, endian);
+        let parse_const = match endian {
+            Endian::Big => PARSE_CONST_WIIU,
+            Endian::Little => PARSE_CONST_NX,
+        };
+        let (size, alignment, parse_size) = get_factory_info(ext, endian, bytes);
         match parse_size {
             ParseSize::Simple(parse_size) => {
                 Some(match endian {
                     Endian::Big => {
                         match ext {
                             "esetlist" | "mubin" => round_32(filesize) +
-                                align_to(0xe4 + size + parse_size, alignment),
+                                align_to(parse_const + size + parse_size, alignment),
                             _ => rounded
-                                + align_to(0xe4 + size + parse_size, alignment)
+                                + align_to(parse_const + size + parse_size, alignment)
                                 + match ext {
                                     "beventpack" => 0xe0,
                                     _ => 0,
@@ -281,147 +289,21 @@ fn calc_or_estimate_from_bytes_and_name(
                         }
                     }
                     Endian::Little => {
-                        rounded + align_to(0x168 + size + parse_size, alignment)
+                        rounded + align_to(parse_const + size + parse_size, alignment)
                     }
                 })
             }
-            ParseSize::Complex => {
-                if estimate {
-                    match ext {
-                        #[cfg(feature = "complex")]
-                        "baiprog" => Some(
-                            rounded + align_to(
-                                baiprog::parse_size(bytes, endian)?,
-                                alignment
-                            )
-                        ),
-                        #[cfg(feature = "complex")]
-                        "baniminfo" => Some(
-                            rounded + align_to(
-                                baniminfo::parse_size(bytes, endian)?,
-                                alignment
-                            )
-                        ),
-                        #[cfg(not(feature = "complex"))]
-                        "baniminfo" => {
-                            Some(
-                                ((rounded as f32 * (if filesize > 36864 { 1.5 } else { 4.0 }))
-                                    as u32
-                                    + 0xe4
-                                    + 0x24c)
-                                    * match endian {
-                                        Endian::Big => 1,
-                                        Endian::Little => 2,
-                                    },
-                            )
-                        }
-                        #[cfg(feature = "complex")]
-                        "baslist" => Some(
-                            rounded + align_to(
-                                baslist::parse_size(bytes, endian)?,
-                                alignment
-                            )
-                        ),
-                        #[cfg(feature = "complex")]
-                        "bchemical" => Some(
-                            rounded + align_to(
-                                bchemical::parse_size(bytes, endian)?,
-                                alignment
-                            )
-                        ),
-                        #[cfg(feature = "complex")]
-                        "bdrop" => Some(
-                            rounded + align_to(
-                                bdrop::parse_size(bytes, endian)?,
-                                alignment
-                            )
-                        ),
-                        "bfres" => Some(estimate_bfres(filesize, endian)),
-                        #[cfg(feature = "complex")]
-                        "bgparamlist" => Some(
-                            rounded + align_to(
-                                bgparamlist::parse_size(bytes, endian)?,
-                                alignment
-                            )
-                        ),
-                        #[cfg(feature = "complex")]
-                        "blifecondition" => Some(
-                            rounded + align_to(
-                                blifecondition::parse_size(bytes, endian)?,
-                                alignment
-                            )
-                        ),
-                        #[cfg(feature = "complex")]
-                        "bmodellist" => Some(
-                            rounded + align_to(
-                                bmodellist::parse_size(bytes, endian)?,
-                                alignment
-                            )
-                        ),
-                        #[cfg(feature = "complex")]
-                        "bphysics" => Some(
-                            rounded + align_to(
-                                bphysics::parse_size(bytes, endian)?,
-                                alignment
-                            )
-                        ),
-                        #[cfg(feature = "complex")]
-                        "bphyssb" => Some(
-                            rounded + align_to(
-                                bphyssb::parse_size(bytes, endian)?,
-                                alignment
-                            )
-                        ),
-                        #[cfg(feature = "complex")]
-                        "brecipe" => Some(
-                            rounded + align_to(
-                                brecipe::parse_size(bytes, endian)?,
-                                alignment
-                            )
-                        ),
-                        #[cfg(feature = "complex")]
-                        "brgconfiglist" => Some(
-                            rounded + align_to(
-                                brgconfiglist::parse_size(bytes, endian)?,
-                                alignment
-                            )
-                        ),
-                        #[cfg(feature = "complex")]
-                        "bshop" => Some(
-                            rounded + align_to(
-                                bshop::parse_size(bytes, endian)?,
-                                alignment
-                            )
-                        ),
-                        #[cfg(feature = "complex")]
-                        "bxml" => Some(
-                            rounded + align_to(
-                                bxml::parse_size(bytes, endian)?,
-                                alignment
-                            )
-                        ),
-                        "hknm2" => {
-                            Some(
-                                rounded
-                                    + match endian {
-                                        Endian::Big => 0x19c,
-                                        Endian::Little => 0x290,
-                                    },
-                            )
-                        }
-                        "hksc" => {
-                            Some(
-                                rounded
-                                    + match endian {
-                                        Endian::Big => 0x74cc,
-                                        Endian::Little => 0x9c00,
-                                    },
-                            )
-                        }
-                        _ => estimate_aamp(filesize, name, endian),
+            ParseSize::Complex(maybe_size) => {
+                match maybe_size {
+                    Some(parse_size) => Some(rounded +
+                        align_to(parse_const + size + parse_size, alignment)),
+                    None => match estimate {
+                        true => match ext {
+                            "bfres" => Some(estimate_bfres(filesize, endian)),
+                            _ => estimate_aamp(filesize, name, endian)
+                        },
+                        false => None,
                     }
-                } else {
-                    None
                 }
             }
         }
@@ -439,8 +321,8 @@ fn estimate_aamp(filesize: usize, name: &str, endian: Endian) -> Option<u32> {
     if ext == "bassetting" {
         size = (round_32(size as usize)
             + match endian {
-                Endian::Big => 0xe4 + 0x1d8,
-                Endian::Little => 0x168 + 0x260,
+                Endian::Big => PARSE_CONST_WIIU + 0x1d8,
+                Endian::Little => PARSE_CONST_NX + 0x260,
             }) as f32
             + (size * 2.75)
     } else if ext == "bdmgparam" {
@@ -685,7 +567,10 @@ mod tests {
     fn calc_sizes() {
         assert_eq!(
             super::calc_from_file("test/A-1_Dynamic.smubin", Endian::Big).unwrap(),
-            Some(48772)
+            Some(48800) // Some(48832)
+            // The one included with my (Ginger) DLC is length 0xBD8C but the one included for
+            // tests is length 0xBD64. That discrepancy accounts for the difference between the
+            // RSTB's 48832 and the 48800 calced from the test file
         );
         assert_eq!(
             super::calc_from_file("test/AirOcta_Tag.sbactorpack", Endian::Little).unwrap(),
@@ -704,7 +589,7 @@ mod tests {
         let buffer: Vec<u8> = read("test/savedataformat.ssarc").unwrap();
         assert_eq!(
             super::calc_from_slice_and_name(buffer, "savedataformat.ssarc", Endian::Big),
-            Some(2_801_216)
+            Some(2_801_344) // Some(2_801_312)
         );
     }
 
@@ -756,12 +641,11 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn estimate_sizes_complex() {
         assert_eq!(
             super::estimate_from_slice_and_name(
-                std::fs::read("test/Animal_Bass.Tex1.sbfres").unwrap(),
+                read("test/Animal_Bass.Tex1.sbfres").unwrap(),
                 "Model/Animal_Bass.Tex1.sbfres",
                 Endian::Big
             ),
@@ -769,7 +653,7 @@ mod tests {
         );
         assert_ge!(
             super::estimate_from_slice_and_name(
-                std::fs::read("test/DgnMrgPrt_Dungeon061.sbfres").unwrap(),
+                read("test/DgnMrgPrt_Dungeon061.sbfres").unwrap(),
                 "Model/DgnMrgPrt_Dungeon061.sbfres",
                 Endian::Big,
             ),
@@ -777,7 +661,7 @@ mod tests {
         );
         assert_ge!(
             super::estimate_from_slice_and_name(
-                std::fs::read("test/NpcGerudoQueenBattle.baiprog").unwrap(),
+                read("test/NpcGerudoQueenBattle.baiprog").unwrap(),
                 "Actor/AIProgram/NpcGerudoQueenBattle.baiprog",
                 Endian::Big,
             ),
@@ -785,7 +669,7 @@ mod tests {
         );
         assert_ge!(
             super::estimate_from_slice_and_name(
-                std::fs::read("test/Player_Link.bgparamlist").unwrap(),
+                read("test/Player_Link.bgparamlist").unwrap(),
                 "Actor/GeneralParamList/Player_Link.bgparamlist",
                 Endian::Big,
             ),
@@ -793,7 +677,7 @@ mod tests {
         );
         assert_ge!(
             super::estimate_from_slice_and_name(
-                &std::fs::read("test/Dummy.bgparamlist").unwrap(),
+                read("test/Dummy.bgparamlist").unwrap(),
                 "Actor/GeneralParamList/Dummy.bgparamlist",
                 Endian::Big,
             ),
@@ -801,7 +685,7 @@ mod tests {
         );
         assert_ge!(
             super::estimate_from_slice_and_name(
-                std::fs::read("test/Armor_001_Upper.bmodellist").unwrap(),
+                read("test/Armor_001_Upper.bmodellist").unwrap(),
                 "Actor/ModelList/Armor_001_Upper.bmodellist",
                 Endian::Big,
             ),
@@ -809,7 +693,7 @@ mod tests {
         );
         assert_ge!(
             super::estimate_from_slice_and_name(
-                std::fs::read("test/Armor_002_Upper.brecipe").unwrap(),
+                read("test/Armor_002_Upper.brecipe").unwrap(),
                 "Actor/ModelList/Armor_002_Upper.brecipe",
                 Endian::Big,
             ),
@@ -817,7 +701,7 @@ mod tests {
         );
         assert_ge!(
             super::estimate_from_slice_and_name(
-                std::fs::read("test/Assassin_Senior.bdrop").unwrap(),
+                read("test/Assassin_Senior.bdrop").unwrap(),
                 "Actor/DropTable/Assassin_Senior.bdrop",
                 Endian::Big,
             ),
@@ -825,7 +709,7 @@ mod tests {
         );
         assert_ge!(
             super::estimate_from_slice_and_name(
-                std::fs::read("test/Assassin_Senior.bxml").unwrap(),
+                read("test/Assassin_Senior.bxml").unwrap(),
                 "Actor/ActorLink/Assassin_Senior.bxml",
                 Endian::Big,
             ),
@@ -833,7 +717,7 @@ mod tests {
         );
         assert_ge!(
             super::estimate_from_slice_and_name(
-                std::fs::read("test/Npc_TripMaster_08.bshop").unwrap(),
+                read("test/Npc_TripMaster_08.bshop").unwrap(),
                 "Actor/ShopData/Npc_TripMaster_08.bshop",
                 Endian::Big,
             ),
@@ -841,7 +725,7 @@ mod tests {
         );
         assert_ge!(
             super::estimate_from_slice_and_name(
-                std::fs::read("test/Player_Link.bphysics").unwrap(),
+                read("test/Player_Link.bphysics").unwrap(),
                 "Actor/Physics/Player_Link.bphysics",
                 Endian::Big,
             ),
@@ -849,7 +733,6 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "complex_testing")]
     fn test_all_of_type_assert(link: &str, folder: &str, ext: &str) {
         use std::collections::HashSet;
         use roead::{aamp::ParameterIO, sarc};
@@ -865,7 +748,7 @@ mod tests {
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
         let rstable = ResourceSizeTable::from_binary(
-                std::fs::read(rstb_path).unwrap()
+                read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
                 update_path.join("Actor")
@@ -877,7 +760,7 @@ mod tests {
             match entry {
                 Ok(path) => {
                     let actorname = path.file_stem().unwrap().to_str().unwrap();
-                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    let sarc = sarc::Sarc::new(read(&path).unwrap()).unwrap();
                     let bxml = ParameterIO::from_binary(
                         sarc.get_data(&format!("Actor/ActorLink/{}.bxml", actorname))
                             .unwrap(),
@@ -918,7 +801,7 @@ mod tests {
         let titlebg_path = update_path
             .join("Pack")
             .join("TitleBG.pack");
-        let titlebg = sarc::Sarc::new(std::fs::read(&titlebg_path).unwrap()).unwrap();
+        let titlebg = sarc::Sarc::new(read(&titlebg_path).unwrap()).unwrap();
         for file in titlebg.files() {
             if file.name.unwrap_or("").starts_with("Actor/Pack") {
                 let actorname_as_pathbuf = PathBuf::from(file.name.unwrap());
@@ -965,7 +848,6 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "complex_testing")]
     fn test_all_of_type_print(link: &str, folder: &str, ext: &str) {
         use std::collections::HashSet;
         use roead::{aamp::ParameterIO, sarc};
@@ -983,7 +865,7 @@ mod tests {
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
         let rstable = ResourceSizeTable::from_binary(
-                std::fs::read(rstb_path).unwrap()
+                read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
                 update_path.join("Actor")
@@ -995,7 +877,7 @@ mod tests {
             match entry {
                 Ok(path) => {
                     let actorname = path.file_stem().unwrap().to_str().unwrap();
-                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    let sarc = sarc::Sarc::new(read(&path).unwrap()).unwrap();
                     let bxml = ParameterIO::from_binary(
                         sarc.get_data(&format!("Actor/ActorLink/{}.bxml", actorname))
                             .unwrap(),
@@ -1046,7 +928,7 @@ mod tests {
         let titlebg_path = update_path
             .join("Pack")
             .join("TitleBG.pack");
-        let titlebg = sarc::Sarc::new(std::fs::read(&titlebg_path).unwrap()).unwrap();
+        let titlebg = sarc::Sarc::new(read(&titlebg_path).unwrap()).unwrap();
         for file in titlebg.files() {
             if file.name.unwrap_or("").starts_with("Actor/Pack") {
                 let actorname_as_pathbuf = PathBuf::from(file.name.unwrap());
@@ -1105,43 +987,36 @@ mod tests {
         println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_baiprog() {
         test_all_of_type_print("AIProgramUser", "AIProgram", "baiprog");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_baischedule() {
         test_all_of_type_assert("AIScheduleUser", "AISchedule", "baischedule");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_baniminfo() {
         test_all_of_type_print("AnimationInfo", "AnimationInfo", "baniminfo");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_baslist() {
         test_all_of_type_assert("ASUser", "ASList", "baslist");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_bawareness() {
         test_all_of_type_assert("AwarenessUser", "Awareness", "bawareness");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_bchemical() {
         test_all_of_type_assert("ChemicalUser", "Chemical", "bchemical");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_bdemo() {
         use std::collections::HashSet;
@@ -1158,7 +1033,7 @@ mod tests {
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
         let rstable = ResourceSizeTable::from_binary(
-                std::fs::read(rstb_path).unwrap()
+                read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
                 update_path.join("Event")
@@ -1168,7 +1043,7 @@ mod tests {
             ).unwrap() {
             match entry {
                 Ok(path) => {
-                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    let sarc = sarc::Sarc::new(read(&path).unwrap()).unwrap();
                     for file in sarc.files() {
                         let param_name = file.name.unwrap();
                         if !param_name.ends_with(".bdemo") | result.contains(param_name) {
@@ -1194,19 +1069,16 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_bdmgparam() {
         test_all_of_type_assert("DamageParamUser", "DamageParam", "bdmgparam");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_bdrop() {
         test_all_of_type_assert("DropTableUser", "DropTable", "bdrop");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_bfevfl() {
         use std::collections::HashSet;
@@ -1225,7 +1097,7 @@ mod tests {
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
         let rstable = ResourceSizeTable::from_binary(
-                std::fs::read(rstb_path).unwrap()
+                read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
                 update_path.join("Event")
@@ -1236,7 +1108,7 @@ mod tests {
             match entry {
                 Ok(path) => {
                     let actorname = path.file_stem().unwrap().to_str().unwrap();
-                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    let sarc = sarc::Sarc::new(read(&path).unwrap()).unwrap();
                     for file in sarc.files() {
                         let param_name = file.name.unwrap();
                         if !param_name.ends_with(".bfevfl") | result.contains(param_name) {
@@ -1274,7 +1146,6 @@ mod tests {
         println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_bfevtm() {
         use std::collections::HashSet;
@@ -1291,7 +1162,7 @@ mod tests {
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
         let rstable = ResourceSizeTable::from_binary(
-                std::fs::read(rstb_path).unwrap()
+                read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
                 update_path.join("Event")
@@ -1301,7 +1172,7 @@ mod tests {
             ).unwrap() {
             match entry {
                 Ok(path) => {
-                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    let sarc = sarc::Sarc::new(read(&path).unwrap()).unwrap();
                     for file in sarc.files() {
                         let param_name = file.name.unwrap();
                         if !param_name.ends_with(".bfevtm") | result.contains(param_name) {
@@ -1327,37 +1198,31 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_bgparamlist() {
         test_all_of_type_print("GParamUser", "GeneralParamList", "bgparamlist");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_blifecondition() {
         test_all_of_type_assert("LifeConditionUser", "LifeCondition", "blifecondition");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_blod() {
         test_all_of_type_assert("LODUser", "LOD", "blod");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_bmodellist() {
         test_all_of_type_print("ModelUser", "ModelList", "bmodellist");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_bphysics() {
         test_all_of_type_print("PhysicsUser", "Physics", "bphysics");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_bphyssb() {
         use std::collections::HashSet;
@@ -1374,7 +1239,7 @@ mod tests {
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
         let rstable = ResourceSizeTable::from_binary(
-                std::fs::read(rstb_path).unwrap()
+                read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
                 update_path.join("Actor")
@@ -1386,7 +1251,7 @@ mod tests {
             match entry {
                 Ok(path) => {
                     let actorname = path.file_stem().unwrap().to_str().unwrap();
-                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    let sarc = sarc::Sarc::new(read(&path).unwrap()).unwrap();
                     let bxml = ParameterIO::from_binary(
                         sarc.get_data(&format!("Actor/ActorLink/{}.bxml", actorname))
                             .unwrap(),
@@ -1447,13 +1312,11 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_brecipe() {
         test_all_of_type_assert("RecipeUser", "Recipe", "brecipe");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_brgconfig() {
         use std::collections::HashSet;
@@ -1470,7 +1333,7 @@ mod tests {
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
         let rstable = ResourceSizeTable::from_binary(
-                std::fs::read(rstb_path).unwrap()
+                read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
                 update_path.join("Actor")
@@ -1482,7 +1345,7 @@ mod tests {
             match entry {
                 Ok(path) => {
                     let actorname = path.file_stem().unwrap().to_str().unwrap();
-                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    let sarc = sarc::Sarc::new(read(&path).unwrap()).unwrap();
                     let bxml = ParameterIO::from_binary(
                         sarc.get_data(&format!("Actor/ActorLink/{}.bxml", actorname))
                             .unwrap(),
@@ -1542,7 +1405,7 @@ mod tests {
         let titlebg_path = update_path
             .join("Pack")
             .join("TitleBG.pack");
-        let titlebg = sarc::Sarc::new(std::fs::read(&titlebg_path).unwrap()).unwrap();
+        let titlebg = sarc::Sarc::new(read(&titlebg_path).unwrap()).unwrap();
         for file in titlebg.files() {
             if file.name.unwrap_or("").starts_with("Actor/Pack") {
                 let actorname_as_pathbuf = PathBuf::from(file.name.unwrap());
@@ -1607,25 +1470,21 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_brgconfiglist() {
         test_all_of_type_assert("RgConfigListUser", "RagdollConfigList", "brgconfiglist");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_bshop() {
         test_all_of_type_assert("ShopDataUser", "ShopData", "bshop");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_bumii() {
         test_all_of_type_assert("UMiiUser", "UMii", "bumii");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_bxml() {
         use std::collections::HashSet;
@@ -1642,7 +1501,7 @@ mod tests {
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
         let rstable = ResourceSizeTable::from_binary(
-                std::fs::read(rstb_path).unwrap()
+                read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
                 update_path.join("Actor")
@@ -1654,7 +1513,7 @@ mod tests {
             match entry {
                 Ok(path) => {
                     let actorname = path.file_stem().unwrap().to_str().unwrap();
-                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    let sarc = sarc::Sarc::new(read(&path).unwrap()).unwrap();
                     let param_name = format!("Actor/ActorLink/{}.bxml", actorname);
                     if param_name.contains("Dummy") | result.contains(&param_name) {
                         continue;
@@ -1679,7 +1538,6 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_esetlist() {
         use glob::glob;
@@ -1692,7 +1550,7 @@ mod tests {
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
         let rstable = ResourceSizeTable::from_binary(
-                std::fs::read(rstb_path).unwrap()
+                read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
                 update_path.join("Effect")
@@ -1705,7 +1563,7 @@ mod tests {
                     let param_name = format!("Effect/{filename}.esetlist", filename = path.file_stem().unwrap().to_str().unwrap());
                     if let Some(rstb_entry) = rstable.get(param_name.as_ref()) {
                         let calc_size = super::estimate_from_bytes_and_name(
-                            std::fs::read(&path).unwrap().as_ref(),
+                            read(&path).unwrap().as_ref(),
                             param_name.as_ref(),
                             Endian::Big,
                         )
@@ -1721,7 +1579,6 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_hkrb() {
         use std::collections::HashSet;
@@ -1738,7 +1595,7 @@ mod tests {
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
         let rstable = ResourceSizeTable::from_binary(
-                std::fs::read(rstb_path).unwrap()
+                read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
                 update_path.join("Actor")
@@ -1749,7 +1606,7 @@ mod tests {
             ).unwrap() {
             match entry {
                 Ok(path) => {
-                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    let sarc = sarc::Sarc::new(read(&path).unwrap()).unwrap();
                     for file in sarc.files() {
                         let param_name = file.name.unwrap();
                         if !param_name.ends_with(".hkrb") | result.contains(param_name) {
@@ -1775,7 +1632,6 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_hkrg() {
         use std::collections::HashSet;
@@ -1792,7 +1648,7 @@ mod tests {
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
         let rstable = ResourceSizeTable::from_binary(
-                std::fs::read(rstb_path).unwrap()
+                read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
                 update_path.join("Actor")
@@ -1803,7 +1659,7 @@ mod tests {
             ).unwrap() {
             match entry {
                 Ok(path) => {
-                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    let sarc = sarc::Sarc::new(read(&path).unwrap()).unwrap();
                     for file in sarc.files() {
                         let param_name = file.name.unwrap();
                         if !param_name.ends_with(".hkrg") | result.contains(param_name) {
@@ -1829,7 +1685,6 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_hksc() {
         use std::collections::HashSet;
@@ -1847,7 +1702,7 @@ mod tests {
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
         let rstable = ResourceSizeTable::from_binary(
-            std::fs::read(rstb_path).unwrap()
+            read(rstb_path).unwrap()
         ).unwrap();
         for entry in glob(
             update_path.join("Physics")
@@ -1893,7 +1748,6 @@ mod tests {
         println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_bootup_byml() {
         use roead::sarc;
@@ -1907,12 +1761,12 @@ mod tests {
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
         let rstable = ResourceSizeTable::from_binary(
-                std::fs::read(rstb_path).unwrap()
+                read(rstb_path).unwrap()
             ).unwrap();
         let bootup_path = update_path
             .join("Pack")
             .join("Bootup.pack");
-        let bootup = sarc::Sarc::new(std::fs::read(&bootup_path).unwrap()).unwrap();
+        let bootup = sarc::Sarc::new(read(&bootup_path).unwrap()).unwrap();
         for file in bootup.files() {
             if file.name.unwrap_or("").ends_with("byml") {
                 let name = file.name.unwrap().replace(".s", ".");
@@ -1944,7 +1798,6 @@ mod tests {
         println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_dlc_mainfield_mubin() {
         use std::collections::HashSet;
@@ -1960,7 +1813,7 @@ mod tests {
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
         let rstable = ResourceSizeTable::from_binary(
-            std::fs::read(rstb_path).unwrap()
+            read(rstb_path).unwrap()
         ).unwrap();
         let mut globs = Vec::new();
         globs.push(glob(
@@ -2012,7 +1865,6 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "complex_testing")]
     fn test_all_of_type_assert_nx(link: &str, folder: &str, ext: &str) {
         use std::collections::HashSet;
         use roead::{aamp::ParameterIO, sarc};
@@ -2028,7 +1880,7 @@ mod tests {
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
         let rstable = ResourceSizeTable::from_binary(
-                std::fs::read(rstb_path).unwrap()
+                read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
                 update_path.join("Actor")
@@ -2040,7 +1892,7 @@ mod tests {
             match entry {
                 Ok(path) => {
                     let actorname = path.file_stem().unwrap().to_str().unwrap();
-                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    let sarc = sarc::Sarc::new(read(&path).unwrap()).unwrap();
                     let bxml = ParameterIO::from_binary(
                         sarc.get_data(&format!("Actor/ActorLink/{}.bxml", actorname))
                             .unwrap(),
@@ -2081,7 +1933,7 @@ mod tests {
         let titlebg_path = update_path
             .join("Pack")
             .join("TitleBG.pack");
-        let titlebg = sarc::Sarc::new(std::fs::read(&titlebg_path).unwrap()).unwrap();
+        let titlebg = sarc::Sarc::new(read(&titlebg_path).unwrap()).unwrap();
         for file in titlebg.files() {
             if file.name.unwrap_or("").starts_with("Actor/Pack") {
                 let actorname_as_pathbuf = PathBuf::from(file.name.unwrap());
@@ -2128,7 +1980,6 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "complex_testing")]
     fn test_all_of_type_print_nx(link: &str, folder: &str, ext: &str) {
         use std::collections::HashSet;
         use roead::{aamp::ParameterIO, sarc};
@@ -2146,7 +1997,7 @@ mod tests {
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
         let rstable = ResourceSizeTable::from_binary(
-                std::fs::read(rstb_path).unwrap()
+                read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
                 update_path.join("Actor")
@@ -2158,7 +2009,7 @@ mod tests {
             match entry {
                 Ok(path) => {
                     let actorname = path.file_stem().unwrap().to_str().unwrap();
-                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    let sarc = sarc::Sarc::new(read(&path).unwrap()).unwrap();
                     let bxml = ParameterIO::from_binary(
                         sarc.get_data(&format!("Actor/ActorLink/{}.bxml", actorname))
                             .unwrap(),
@@ -2209,7 +2060,7 @@ mod tests {
         let titlebg_path = update_path
             .join("Pack")
             .join("TitleBG.pack");
-        let titlebg = sarc::Sarc::new(std::fs::read(&titlebg_path).unwrap()).unwrap();
+        let titlebg = sarc::Sarc::new(read(&titlebg_path).unwrap()).unwrap();
         for file in titlebg.files() {
             if file.name.unwrap_or("").starts_with("Actor/Pack") {
                 let actorname_as_pathbuf = PathBuf::from(file.name.unwrap());
@@ -2268,43 +2119,36 @@ mod tests {
         println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_baiprog_nx() {
         test_all_of_type_print_nx("AIProgramUser", "AIProgram", "baiprog");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_baischedule_nx() {
         test_all_of_type_assert_nx("AIScheduleUser", "AISchedule", "baischedule");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_baniminfo_nx() {
         test_all_of_type_print_nx("AnimationInfo", "AnimationInfo", "baniminfo");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_baslist_nx() {
         test_all_of_type_assert_nx("ASUser", "ASList", "baslist");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_bawareness_nx() {
         test_all_of_type_assert_nx("AwarenessUser", "Awareness", "bawareness");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_bchemical_nx() {
         test_all_of_type_assert_nx("ChemicalUser", "Chemical", "bchemical");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_bdemo_nx() {
         use std::collections::HashSet;
@@ -2321,7 +2165,7 @@ mod tests {
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
         let rstable = ResourceSizeTable::from_binary(
-                std::fs::read(rstb_path).unwrap()
+                read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
                 update_path.join("Event")
@@ -2331,7 +2175,7 @@ mod tests {
             ).unwrap() {
             match entry {
                 Ok(path) => {
-                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    let sarc = sarc::Sarc::new(read(&path).unwrap()).unwrap();
                     for file in sarc.files() {
                         let param_name = file.name.unwrap();
                         if !param_name.ends_with(".bdemo") | result.contains(param_name) {
@@ -2357,19 +2201,16 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_bdmgparam_nx() {
         test_all_of_type_assert_nx("DamageParamUser", "DamageParam", "bdmgparam");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_bdrop_nx() {
         test_all_of_type_assert_nx("DropTableUser", "DropTable", "bdrop");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_bfevfl_nx() {
         use std::collections::HashSet;
@@ -2386,7 +2227,7 @@ mod tests {
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
         let rstable = ResourceSizeTable::from_binary(
-                std::fs::read(rstb_path).unwrap()
+                read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
                 update_path.join("Event")
@@ -2396,7 +2237,7 @@ mod tests {
             ).unwrap() {
             match entry {
                 Ok(path) => {
-                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    let sarc = sarc::Sarc::new(read(&path).unwrap()).unwrap();
                     for file in sarc.files() {
                         let param_name = file.name.unwrap();
                         if !param_name.ends_with(".bfevfl") | result.contains(param_name) {
@@ -2422,7 +2263,6 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_bfevtm_nx() {
         use std::collections::HashSet;
@@ -2439,7 +2279,7 @@ mod tests {
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
         let rstable = ResourceSizeTable::from_binary(
-                std::fs::read(rstb_path).unwrap()
+                read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
                 update_path.join("Event")
@@ -2449,7 +2289,7 @@ mod tests {
             ).unwrap() {
             match entry {
                 Ok(path) => {
-                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    let sarc = sarc::Sarc::new(read(&path).unwrap()).unwrap();
                     for file in sarc.files() {
                         let param_name = file.name.unwrap();
                         if !param_name.ends_with(".bfevtm") | result.contains(param_name) {
@@ -2475,37 +2315,31 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_bgparamlist_nx() {
         test_all_of_type_print_nx("GParamUser", "GeneralParamList", "bgparamlist");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_blifecondition_nx() {
         test_all_of_type_assert_nx("LifeConditionUser", "LifeCondition", "blifecondition");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_blod_nx() {
         test_all_of_type_assert_nx("LODUser", "LOD", "blod");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_bmodellist_nx() {
         test_all_of_type_assert_nx("ModelUser", "ModelList", "bmodellist");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_bphysics_nx() {
         test_all_of_type_print_nx("PhysicsUser", "Physics", "bphysics");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_bphyssb_nx() {
         use std::collections::HashSet;
@@ -2522,7 +2356,7 @@ mod tests {
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
         let rstable = ResourceSizeTable::from_binary(
-                std::fs::read(rstb_path).unwrap()
+                read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
                 update_path.join("Actor")
@@ -2534,7 +2368,7 @@ mod tests {
             match entry {
                 Ok(path) => {
                     let actorname = path.file_stem().unwrap().to_str().unwrap();
-                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    let sarc = sarc::Sarc::new(read(&path).unwrap()).unwrap();
                     let bxml = ParameterIO::from_binary(
                         sarc.get_data(&format!("Actor/ActorLink/{}.bxml", actorname))
                             .unwrap(),
@@ -2595,13 +2429,11 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_brecipe_nx() {
         test_all_of_type_assert_nx("RecipeUser", "Recipe", "brecipe");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_brgconfig_nx() {
         use std::collections::HashSet;
@@ -2618,7 +2450,7 @@ mod tests {
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
         let rstable = ResourceSizeTable::from_binary(
-                std::fs::read(rstb_path).unwrap()
+                read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
                 update_path.join("Actor")
@@ -2630,7 +2462,7 @@ mod tests {
             match entry {
                 Ok(path) => {
                     let actorname = path.file_stem().unwrap().to_str().unwrap();
-                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    let sarc = sarc::Sarc::new(read(&path).unwrap()).unwrap();
                     let bxml = ParameterIO::from_binary(
                         sarc.get_data(&format!("Actor/ActorLink/{}.bxml", actorname))
                             .unwrap(),
@@ -2689,7 +2521,7 @@ mod tests {
         let titlebg_path = update_path
             .join("Pack")
             .join("TitleBG.pack");
-        let titlebg = sarc::Sarc::new(std::fs::read(&titlebg_path).unwrap()).unwrap();
+        let titlebg = sarc::Sarc::new(read(&titlebg_path).unwrap()).unwrap();
         for file in titlebg.files() {
             if file.name.unwrap_or("").starts_with("Actor/Pack") {
                 let actorname_as_pathbuf = PathBuf::from(file.name.unwrap());
@@ -2754,25 +2586,21 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_brgconfiglist_nx() {
         test_all_of_type_assert_nx("RgConfigListUser", "RagdollConfigList", "brgconfiglist");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_bshop_nx() {
         test_all_of_type_assert_nx("ShopDataUser", "ShopData", "bshop");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_bumii_nx() {
         test_all_of_type_assert_nx("UMiiUser", "UMii", "bumii");
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_bxml_nx() {
         use std::collections::HashSet;
@@ -2789,7 +2617,7 @@ mod tests {
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
         let rstable = ResourceSizeTable::from_binary(
-                std::fs::read(rstb_path).unwrap()
+                read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
                 update_path.join("Actor")
@@ -2801,7 +2629,7 @@ mod tests {
             match entry {
                 Ok(path) => {
                     let actorname = path.file_stem().unwrap().to_str().unwrap();
-                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    let sarc = sarc::Sarc::new(read(&path).unwrap()).unwrap();
                     let param_name = format!("Actor/ActorLink/{}.bxml", actorname);
                     if param_name.contains("Dummy") | result.contains(&param_name) {
                         continue;
@@ -2826,7 +2654,6 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_esetlist_nx() {
         use glob::glob;
@@ -2839,7 +2666,7 @@ mod tests {
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
         let rstable = ResourceSizeTable::from_binary(
-                std::fs::read(rstb_path).unwrap()
+                read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
                 update_path.join("Effect")
@@ -2852,7 +2679,7 @@ mod tests {
                     let param_name = format!("Effect/{filename}.esetlist", filename = path.file_stem().unwrap().to_str().unwrap());
                     if let Some(rstb_entry) = rstable.get(param_name.as_ref()) {
                             let calc_size = super::estimate_from_bytes_and_name(
-                                std::fs::read(&path).unwrap().as_ref(),
+                                read(&path).unwrap().as_ref(),
                                 param_name.as_ref(),
                                 Endian::Little,
                             )
@@ -2868,7 +2695,6 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_hkrb_nx() {
         use std::collections::HashSet;
@@ -2885,7 +2711,7 @@ mod tests {
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
         let rstable = ResourceSizeTable::from_binary(
-                std::fs::read(rstb_path).unwrap()
+                read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
                 update_path.join("Actor")
@@ -2896,7 +2722,7 @@ mod tests {
             ).unwrap() {
             match entry {
                 Ok(path) => {
-                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    let sarc = sarc::Sarc::new(read(&path).unwrap()).unwrap();
                     for file in sarc.files() {
                         let param_name = file.name.unwrap();
                         if !param_name.ends_with(".hkrb") | result.contains(param_name) {
@@ -2922,7 +2748,6 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_hkrg_nx() {
         use std::collections::HashSet;
@@ -2939,7 +2764,7 @@ mod tests {
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
         let rstable = ResourceSizeTable::from_binary(
-                std::fs::read(rstb_path).unwrap()
+                read(rstb_path).unwrap()
             ).unwrap();
         for entry in glob(
                 update_path.join("Actor")
@@ -2950,7 +2775,7 @@ mod tests {
             ).unwrap() {
             match entry {
                 Ok(path) => {
-                    let sarc = sarc::Sarc::new(std::fs::read(&path).unwrap()).unwrap();
+                    let sarc = sarc::Sarc::new(read(&path).unwrap()).unwrap();
                     for file in sarc.files() {
                         let param_name = file.name.unwrap();
                         if !param_name.ends_with(".hkrg") | result.contains(param_name) {
@@ -2976,7 +2801,6 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_bootup_byml_nx() {
         use roead::sarc;
@@ -2990,12 +2814,12 @@ mod tests {
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
         let rstable = ResourceSizeTable::from_binary(
-                std::fs::read(rstb_path).unwrap()
+                read(rstb_path).unwrap()
             ).unwrap();
         let bootup_path = update_path
             .join("Pack")
             .join("Bootup.pack");
-        let bootup = sarc::Sarc::new(std::fs::read(&bootup_path).unwrap()).unwrap();
+        let bootup = sarc::Sarc::new(read(&bootup_path).unwrap()).unwrap();
         for file in bootup.files() {
             if file.name.unwrap_or("").ends_with("byml") {
                 let name = file.name.unwrap().replace(".s", ".");
@@ -3027,7 +2851,6 @@ mod tests {
         println!("Biggest underguess (overhead must be increased by this much): {}", -undershot);
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn test_all_dlc_mainfield_mubin_nx() {
         use std::collections::HashSet;
@@ -3043,7 +2866,7 @@ mod tests {
             .join("Resource")
             .join("ResourceSizeTable.product.srsizetable");
         let rstable = ResourceSizeTable::from_binary(
-            std::fs::read(rstb_path).unwrap()
+            read(rstb_path).unwrap()
         ).unwrap();
         let mut globs = Vec::new();
         globs.push(glob(
@@ -3095,7 +2918,6 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "complex_testing")]
     #[test]
     fn write_graphic_pack_rstb_from_formulas_only() {
         use std::{collections::HashSet, fs, path::Path};
@@ -3113,7 +2935,7 @@ mod tests {
             .join("ukmm")
             .join("settings.yml");
         let settings = Tree::parse(
-                std::fs::read_to_string(settings_path).unwrap()
+                fs::read_to_string(settings_path).unwrap()
             ).unwrap();
         let profile_node = settings.root_ref()
             .unwrap()
@@ -3145,10 +2967,10 @@ mod tests {
             println!("RSTB not backed up. Backing up...");
             fs::copy(&rstb_path, &rstb_backup).expect("Failed to back up RSTB");
         }
-        let mut rstable = ResourceSizeTable::from_binary(fs::read(rstb_backup).unwrap()).unwrap();
+        let mut rstable = ResourceSizeTable::from_binary(read(rstb_backup).unwrap()).unwrap();
 
         let bootup =
-            sarc::Sarc::new(fs::read(root.join("Pack").join("Bootup.pack")).unwrap()).unwrap();
+            sarc::Sarc::new(read(root.join("Pack").join("Bootup.pack")).unwrap()).unwrap();
         for bootup_file in bootup.files() {
             if let Some(name) = bootup_file.name {
                 if parsed.contains(name) {
@@ -3175,7 +2997,7 @@ mod tests {
         }
 
         let titlebg =
-            sarc::Sarc::new(fs::read(root.join("Pack").join("TitleBG.pack")).unwrap()).unwrap();
+            sarc::Sarc::new(read(root.join("Pack").join("TitleBG.pack")).unwrap()).unwrap();
         for bg_file in titlebg.files() {
             if let Some(name) = bg_file.name {
                 if parsed.contains(name) {
@@ -3344,7 +3166,7 @@ mod tests {
                         "Actor/Pack/{}.bactorpack",
                         path.file_stem().unwrap().to_str().unwrap()
                     );
-                    let data = fs::read(&path).unwrap();
+                    let data = read(&path).unwrap();
                     if /*rstable.contains(param_name.as_str()) && */!parsed.contains(&param_name) {
                         rstable.set(
                             param_name.as_str(),
@@ -3413,7 +3235,7 @@ mod tests {
                         "Event/{}.beventpack",
                         path.file_stem().unwrap().to_str().unwrap()
                     );
-                    let data = fs::read(&path).unwrap();
+                    let data = read(&path).unwrap();
                     if /*rstable.contains(param_name.as_str()) && */!parsed.contains(&param_name) {
                         rstable.set(
                             param_name.as_str(),
@@ -3456,6 +3278,6 @@ mod tests {
         rstable
             .write(&mut buffer, Endian::Big)
             .expect("Couldn't write RSTB");
-        std::fs::write(rstb_path, yaz0::compress(buffer)).expect("Couldn't write RSTB to disc");
+        fs::write(rstb_path, yaz0::compress(buffer)).expect("Couldn't write RSTB to disc");
     }
 }

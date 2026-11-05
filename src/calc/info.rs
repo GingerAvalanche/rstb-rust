@@ -1,12 +1,44 @@
+use crate::calc::cpp_memsizes::{
+    baiprog,
+    baniminfo,
+    baslist,
+    bchemical,
+    bdrop,
+    bgparamlist,
+    blifecondition,
+    bmodellist,
+    bphysics,
+    bphyssb,
+    brecipe,
+    brgconfiglist,
+    bshop,
+    bxml
+};
+use crate::calc::cpp_memsizes::cpp_classes::{
+    ActorLink::ActorLink,
+    AIProgram::AIProgram,
+    AnimationInfo::AnimInfo,
+    ASList::ASList,
+    Chemical::Chemical,
+    DropTable::Drop,
+    GParamList::GParamList,
+    LifeCondition::LifeCondition,
+    ModelList::ModelList,
+    Physics::Physics,
+    RagdollConfigList::RagdollConfigList,
+    Recipe::Recipe,
+    ShopData::Shop,
+    SupportBone::SupportBoneResource,
+};
 use crate::Endian;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ParseSize {
     Simple(u32),
-    Complex,
+    Complex(Option<u32>),
 }
 
-pub(crate) fn get_factory_info<S: AsRef<str>>(ext: S, endian: Endian) -> (u32, isize, ParseSize) {
+pub(crate) fn get_factory_info<S: AsRef<str>>(ext: S, endian: Endian, bytes: &[u8]) -> (u32, isize, ParseSize) {
     match ext.as_ref() {
         "sarc" | "pack" | "bactorpack" | "bmodelsh" | "beventpack" | "stera" | "stats" => {
             match endian {
@@ -22,14 +54,14 @@ pub(crate) fn get_factory_info<S: AsRef<str>>(ext: S, endian: Endian) -> (u32, i
         }
         "bfres" => {
             match endian {
-                Endian::Little => (0x1a8, 0x1000, ParseSize::Complex),
-                Endian::Big => (0x13c, 0x1000, ParseSize::Complex),
+                Endian::Little => (0x1a8, 0x1000, ParseSize::Complex(None)),
+                Endian::Big => (0x13c, 0x1000, ParseSize::Complex(None)),
             }
         }
         "bcamanim" => {
             match endian {
-                Endian::Little => (0x50, 0x2000, ParseSize::Complex),
-                Endian::Big => (0x2c, 0x2000, ParseSize::Complex),
+                Endian::Little => (0x50, 0x2000, ParseSize::Complex(None)),
+                Endian::Big => (0x2c, 0x2000, ParseSize::Complex(None)),
             }
         }
         "batpl" | "bnfprl" => {
@@ -94,80 +126,136 @@ pub(crate) fn get_factory_info<S: AsRef<str>>(ext: S, endian: Endian) -> (u32, i
         }
         "hknm2" => {
             match endian {
-                Endian::Little => (0x48, 0x8, ParseSize::Complex),
-                Endian::Big => (0x28, 0x4, ParseSize::Complex),
+                Endian::Little => (0x48, 0x8, ParseSize::Complex(Some(0x248))),
+                Endian::Big => (0x28, 0x4, ParseSize::Complex(Some(0x174))),
             }
         }
         "bmscdef" => {
             match endian {
-                Endian::Little => (0x2a8, 0x8, ParseSize::Complex),
-                Endian::Big => (0x1fc, 0x4, ParseSize::Complex),
+                Endian::Little => (0x2a8, 0x8, ParseSize::Complex(None)),
+                Endian::Big => (0x1fc, 0x4, ParseSize::Complex(None)),
             }
         }
         "bars" => {
             match endian {
-                Endian::Little => (0xb0, 0x80, ParseSize::Complex),
-                Endian::Big => (0x84, 0x80, ParseSize::Complex),
+                Endian::Little => (0xb0, 0x80, ParseSize::Complex(None)),
+                Endian::Big => (0x84, 0x80, ParseSize::Complex(None)),
             }
         }
         "bxml" => {
             match endian {
-                Endian::Little => (0x778, 0x8, ParseSize::Complex),
-                Endian::Big => (0x4a8, 0x4, ParseSize::Complex),
+                Endian::Little => (
+                    size_of::<ActorLink<u64>>() as u32,
+                    0x8,
+                    ParseSize::Complex(bxml::parse_size(bytes, endian))
+                ),
+                Endian::Big => (
+                    size_of::<ActorLink<u32>>() as u32,
+                    0x4,
+                    ParseSize::Complex(bxml::parse_size(bytes, endian))
+                ),
             }
         }
         "bgparamlist" => {
             match endian {
-                Endian::Little => (0x2c0, 0x8, ParseSize::Complex),
-                Endian::Big => (0x248, 0x4, ParseSize::Complex),
+                Endian::Little => (
+                    size_of::<GParamList<u64>>() as u32,
+                    0x8,
+                    ParseSize::Complex(bgparamlist::parse_size(bytes, endian))
+                ),
+                Endian::Big => (
+                    size_of::<GParamList<u32>>() as u32,
+                    0x4,
+                    ParseSize::Complex(bgparamlist::parse_size(bytes, endian))
+                ),
             }
         }
         "bmodellist" => {
             match endian {
-                Endian::Little => (0x7d0, 0x8, ParseSize::Complex),
-                Endian::Big => (0x508, 0x4, ParseSize::Complex),
+                Endian::Little => (
+                    size_of::<ModelList<u64>>() as u32,
+                    0x8,
+                    ParseSize::Complex(bmodellist::parse_size(bytes, endian))
+                ),
+                Endian::Big => (
+                    size_of::<ModelList<u32>>() as u32,
+                    0x4,
+                    ParseSize::Complex(bmodellist::parse_size(bytes, endian))
+                ),
             }
         }
         "baslist" => {
             match endian {
-                Endian::Little => (0x410, 0x8, ParseSize::Complex),
-                Endian::Big => (0x2f4, 0x4, ParseSize::Complex),
+                Endian::Little => (
+                    size_of::<ASList<u64>>() as u32,
+                    0x8,
+                    ParseSize::Complex(baslist::parse_size(bytes, endian))
+                ),
+                Endian::Big => (
+                    size_of::<ASList<u32>>() as u32,
+                    0x4,
+                    ParseSize::Complex(baslist::parse_size(bytes, endian))
+                ),
             }
         }
         "baiprog" => {
             match endian {
-                Endian::Little => (0x448, 0x8, ParseSize::Complex),
-                Endian::Big => (0x30c, 0x4, ParseSize::Complex),
+                Endian::Little => (
+                    size_of::<AIProgram<u64>>() as u32,
+                    0x8,
+                    ParseSize::Complex(baiprog::parse_size(bytes, endian))
+                ),
+                Endian::Big => (
+                    size_of::<AIProgram<u32>>() as u32,
+                    0x4,
+                    ParseSize::Complex(baiprog::parse_size(bytes, endian))
+                ),
             }
         }
         "bphysics" => {
             match endian {
-                Endian::Little => (0x470, 0x8, ParseSize::Complex),
-                Endian::Big => (0x324, 0x4, ParseSize::Complex),
+                Endian::Little => (
+                    size_of::<Physics<u64>>() as u32,
+                    0x8,
+                    ParseSize::Complex(bphysics::parse_size(bytes, endian))
+                ),
+                Endian::Big => (
+                    size_of::<Physics<u32>>() as u32,
+                    0x4,
+                    ParseSize::Complex(bphysics::parse_size(bytes, endian))
+                ),
             }
         }
         "bchemical" => {
             match endian {
-                Endian::Little => (0x3c0, 0x8, ParseSize::Complex),
-                Endian::Big => (0x2cc, 0x4, ParseSize::Complex),
+                Endian::Little => (
+                    size_of::<Chemical<u64>>() as u32,
+                    0x8,
+                    ParseSize::Complex(bchemical::parse_size(bytes, endian))
+                ),
+                Endian::Big => (
+                    size_of::<Chemical<u32>>() as u32,
+                    0x4,
+                    ParseSize::Complex(bchemical::parse_size(bytes, endian))
+                ),
             }
         }
         "bas" => {
             match endian {
-                Endian::Little => (0x3c8, 0x8, ParseSize::Complex),
-                Endian::Big => (0x2d0, 0x4, ParseSize::Complex),
+                Endian::Little => (0x3c8, 0x8, ParseSize::Complex(None)),
+                Endian::Big => (0x2d0, 0x4, ParseSize::Complex(None)),
             }
         }
         "batcllist" => {
             match endian {
-                Endian::Little => (0x3f0, 0x8, ParseSize::Complex),
-                Endian::Big => (0x2e4, 0x4, ParseSize::Complex),
+                Endian::Little => (0x3f0, 0x8, ParseSize::Complex(None)),
+                Endian::Big => (0x2e4, 0x4, ParseSize::Complex(None)),
             }
         }
         "batcl" => {
             match endian {
-                Endian::Little => (0x428, 0x8, ParseSize::Complex),
-                Endian::Big => (0x344, 0x4, ParseSize::Complex),
+                Endian::Little => (0x428, 0x8, ParseSize::Complex(None)),
+                Endian::Big => (0x344, 0x4, ParseSize::Complex(None)),
             }
         }
         "baischedule" => {
@@ -184,8 +272,16 @@ pub(crate) fn get_factory_info<S: AsRef<str>>(ext: S, endian: Endian) -> (u32, i
         }
         "brgconfiglist" => {
             match endian {
-                Endian::Little => (0x3d0, 0x8, ParseSize::Complex),
-                Endian::Big => (0x2d4, 0x4, ParseSize::Complex),
+                Endian::Little => (
+                    size_of::<RagdollConfigList<u64>>() as u32,
+                    0x8,
+                    ParseSize::Complex(brgconfiglist::parse_size(bytes, endian))
+                ),
+                Endian::Big => (
+                    size_of::<RagdollConfigList<u32>>() as u32,
+                    0x4,
+                    ParseSize::Complex(brgconfiglist::parse_size(bytes, endian))
+                ),
             }
         }
         "brgconfig" => {
@@ -196,8 +292,8 @@ pub(crate) fn get_factory_info<S: AsRef<str>>(ext: S, endian: Endian) -> (u32, i
         }
         "brgbw" => {
             match endian {
-                Endian::Little => (0x2c0, 0x8, ParseSize::Complex),
-                Endian::Big => (0x248, 0x4, ParseSize::Complex),
+                Endian::Little => (0x2c0, 0x8, ParseSize::Complex(None)),
+                Endian::Big => (0x248, 0x4, ParseSize::Complex(None)),
             }
         }
         "bawareness" => {
@@ -208,20 +304,44 @@ pub(crate) fn get_factory_info<S: AsRef<str>>(ext: S, endian: Endian) -> (u32, i
         }
         "bdrop" => {
             match endian {
-                Endian::Little => (0x320, 0x8, ParseSize::Complex),
-                Endian::Big => (0x27c, 0x4, ParseSize::Complex),
+                Endian::Little => (
+                    size_of::<Drop<u64>>() as u32,
+                    0x8,
+                    ParseSize::Complex(bdrop::parse_size(bytes, endian))
+                ),
+                Endian::Big => (
+                    size_of::<Drop<u32>>() as u32,
+                    0x4,
+                    ParseSize::Complex(bdrop::parse_size(bytes, endian))
+                ),
             }
         }
         "bshop" => {
             match endian {
-                Endian::Little => (0x320, 0x8, ParseSize::Complex),
-                Endian::Big => (0x27c, 0x4, ParseSize::Complex),
+                Endian::Little => (
+                    size_of::<Shop<u64>>() as u32,
+                    0x8,
+                    ParseSize::Complex(bshop::parse_size(bytes, endian))
+                ),
+                Endian::Big => (
+                    size_of::<Shop<u32>>() as u32,
+                    0x4,
+                    ParseSize::Complex(bshop::parse_size(bytes, endian))
+                ),
             }
         }
         "brecipe" => {
             match endian {
-                Endian::Little => (0x320, 0x8, ParseSize::Complex),
-                Endian::Big => (0x27c, 0x4, ParseSize::Complex),
+                Endian::Little => (
+                    size_of::<Recipe<u64>>() as u32,
+                    0x8,
+                    ParseSize::Complex(brecipe::parse_size(bytes, endian))
+                ),
+                Endian::Big => (
+                    size_of::<Recipe<u32>>() as u32,
+                    0x4,
+                    ParseSize::Complex(brecipe::parse_size(bytes, endian))
+                ),
             }
         }
         "blod" => {
@@ -232,14 +352,22 @@ pub(crate) fn get_factory_info<S: AsRef<str>>(ext: S, endian: Endian) -> (u32, i
         }
         "bbonectrl" => {
             match endian {
-                Endian::Little => (0x8d0, 0x8, ParseSize::Complex),
-                Endian::Big => (0x564, 0x4, ParseSize::Complex),
+                Endian::Little => (0x8d0, 0x8, ParseSize::Complex(None)),
+                Endian::Big => (0x564, 0x4, ParseSize::Complex(None)),
             }
         }
         "blifecondition" => {
             match endian {
-                Endian::Little => (0x4b0, 0x8, ParseSize::Complex),
-                Endian::Big => (0x35c, 0x4, ParseSize::Complex),
+                Endian::Little => (
+                    size_of::<LifeCondition<u64>>() as u32,
+                    0x8,
+                    ParseSize::Complex(blifecondition::parse_size(bytes, endian))
+                ),
+                Endian::Big => (
+                    size_of::<LifeCondition<u32>>() as u32,
+                    0x4,
+                    ParseSize::Complex(blifecondition::parse_size(bytes, endian))
+                ),
             }
         }
         "bumii" => {
@@ -250,8 +378,16 @@ pub(crate) fn get_factory_info<S: AsRef<str>>(ext: S, endian: Endian) -> (u32, i
         }
         "baniminfo" => {
             match endian {
-                Endian::Little => (0x2c8, 0x8, ParseSize::Complex),
-                Endian::Big => (0x24c, 0x4, ParseSize::Complex),
+                Endian::Little => (
+                    size_of::<AnimInfo<u64>>() as u32,
+                    0x8,
+                    ParseSize::Complex(baniminfo::parse_size(bytes, endian))
+                ),
+                Endian::Big => (
+                    size_of::<AnimInfo<u32>>() as u32,
+                    0x4,
+                    ParseSize::Complex(baniminfo::parse_size(bytes, endian))
+                ),
             }
         }
         "byaml" => {
@@ -268,8 +404,8 @@ pub(crate) fn get_factory_info<S: AsRef<str>>(ext: S, endian: Endian) -> (u32, i
         }
         "bassetting" => {
             match endian {
-                Endian::Little => (0x260, 0x8, ParseSize::Complex),
-                Endian::Big => (0x1d8, 0x4, ParseSize::Complex),
+                Endian::Little => (0x260, 0x8, ParseSize::Complex(None)),
+                Endian::Big => (0x1d8, 0x4, ParseSize::Complex(None)),
             }
         }
         "hkrb" => {
@@ -286,32 +422,40 @@ pub(crate) fn get_factory_info<S: AsRef<str>>(ext: S, endian: Endian) -> (u32, i
         }
         "bphyssb" => {
             match endian {
-                Endian::Little => (0x5b0, 0x8, ParseSize::Complex),
-                Endian::Big => (0x384, 0x4, ParseSize::Complex),
+                Endian::Little => (
+                    size_of::<SupportBoneResource<u64>>() as u32,
+                    0x8,
+                    ParseSize::Complex(bphyssb::parse_size(bytes, endian))
+                ),
+                Endian::Big => (
+                    size_of::<SupportBoneResource<u32>>() as u32,
+                    0x4,
+                    ParseSize::Complex(bphyssb::parse_size(bytes, endian))
+                ),
             }
         }
         "hkcl" => {
             match endian {
-                Endian::Little => (0xe8, 0x8, ParseSize::Complex),
-                Endian::Big => (0xb8, 0x4, ParseSize::Complex),
+                Endian::Little => (0xe8, 0x8, ParseSize::Complex(None)),
+                Endian::Big => (0xb8, 0x4, ParseSize::Complex(None)),
             }
         }
         "hksc" => {
             match endian {
-                Endian::Little => (0x140, 0x8, ParseSize::Complex),
-                Endian::Big => (0xe8, 0x4, ParseSize::Complex),
+                Endian::Little => (0x140, 0x8, ParseSize::Complex(Some(0x9ac0))),
+                Endian::Big => (0xe8, 0x4, ParseSize::Complex(Some(0x73e4))),
             }
         }
         "hktmrb" => {
             match endian {
-                Endian::Little => (0x48, 0x8, ParseSize::Complex),
-                Endian::Big => (0x28, 0x4, ParseSize::Complex),
+                Endian::Little => (0x48, 0x8, ParseSize::Complex(None)),
+                Endian::Big => (0x28, 0x4, ParseSize::Complex(None)),
             }
         }
         "brgcon" => {
             match endian {
-                Endian::Little => (0x48, 0x8, ParseSize::Complex),
-                Endian::Big => (0x28, 0x4, ParseSize::Complex),
+                Endian::Little => (0x48, 0x8, ParseSize::Complex(None)),
+                Endian::Big => (0x28, 0x4, ParseSize::Complex(None)),
             }
         }
         "esetlist" => {

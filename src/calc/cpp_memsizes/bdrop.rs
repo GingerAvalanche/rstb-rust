@@ -5,18 +5,17 @@ use roead::aamp::ParameterIO;
 use super::cpp_classes::DropTable::*;
 use crate::Endian;
 
-const CLASS_SIZE_WIIU: usize = std::mem::size_of::<Drop<u32>>();
-const CLASS_SIZE_NX: usize = std::mem::size_of::<Drop<u64>>();
-
 const OVERHEAD_WIIU: usize = 0x0;
 const OVERHEAD_NX: usize = 0x0;
 const HEADER_OVERHEAD_WIIU: usize = 0x20;
 const HEADER_OVERHEAD_NX: usize = 0x18;
 
 pub fn parse_size(bytes: &[u8], endian: Endian) -> Option<u32> {
+    if bytes.len()  == 0 { return None; }
+
     let mut total_size = match endian {
-        Endian::Big => super::PARSE_CONST_WIIU + CLASS_SIZE_WIIU + OVERHEAD_WIIU,
-        Endian::Little => super::PARSE_CONST_NX + CLASS_SIZE_NX + OVERHEAD_NX,
+        Endian::Big => OVERHEAD_WIIU,
+        Endian::Little => OVERHEAD_NX,
     };
 
     let a = ParameterIO::from_binary(bytes).ok()?;

@@ -9,16 +9,15 @@ use roead::aamp::{ParameterIO, Parameter::I32};
 use super::cpp_classes::{agl::Parameter, Physics::*, sead};
 use crate::Endian;
 
-const CLASS_SIZE_WIIU: usize = std::mem::size_of::<Physics<u32>>();
-const CLASS_SIZE_NX: usize = std::mem::size_of::<Physics<u64>>();
-
 const OVERHEAD_WIIU: usize = 0x120; // 0x8C;
 const OVERHEAD_NX: usize = 0x100; // 0xD0;
 
 pub fn parse_size(bytes: &[u8], endian: Endian) -> Option<u32> {
+    if bytes.len()  == 0 { return None; }
+
     let mut total_size = match endian {
-        Endian::Big => super::PARSE_CONST_WIIU + CLASS_SIZE_WIIU + OVERHEAD_WIIU,
-        Endian::Little => super::PARSE_CONST_NX + CLASS_SIZE_NX + OVERHEAD_NX,
+        Endian::Big => OVERHEAD_WIIU,
+        Endian::Little => OVERHEAD_NX,
     };
 
     let a = ParameterIO::from_binary(bytes).ok()?;

@@ -8,7 +8,6 @@ use crate::{Endian, ResourceSizeTable, CRC32};
 
 flate!(static SWITCH_RSTB_JSON: str from "data/switch.json");
 flate!(static WIIU_RSTB_JSON: str from "data/wiiu.json");
-#[cfg(feature = "complex")]
 flate!(static AIDEF_GAME_YML: str from "data/aidef.yml");
 
 impl ResourceSizeTable {
@@ -41,9 +40,9 @@ pub(crate) static FILE_HASHES: LazyLock<HashMap<u32, String>> = LazyLock::new(||
         .map(|s| (CRC32.checksum(s.as_bytes()), s.to_owned()))
         .collect()
 });
-#[cfg(feature = "complex")]
+
 pub(crate) static AIDEF_GAME: LazyLock<Byml> = LazyLock::new(|| {
-    Byml::from_text(<std::string::String as AsRef<str>>::as_ref(&AIDEF_GAME_YML)).expect("Ref YAML should be good")
+    Byml::from_text(<String as AsRef<str>>::as_ref(&AIDEF_GAME_YML)).expect("Ref YAML should be good")
 });
 
 #[cfg(test)]

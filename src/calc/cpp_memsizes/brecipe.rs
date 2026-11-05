@@ -5,19 +5,17 @@ use roead::aamp::ParameterIO;
 use super::cpp_classes::Recipe::*;
 use crate::Endian;
 
-const CLASS_SIZE_WIIU: usize = std::mem::size_of::<Recipe<u32>>();
-const CLASS_SIZE_NX: usize = std::mem::size_of::<Recipe<u64>>();
-
-// TODO: Figure out why these overheads cost, when they don't for other types
 const BASE_OVERHEAD_WIIU: usize = 0x0;
 const BASE_OVERHEAD_NX: usize = 0x0;
 const HEADER_OVERHEAD_WIIU: usize = 0x20;
 const HEADER_OVERHEAD_NX: usize = 0x18;
 
 pub fn parse_size(bytes: &[u8], endian: Endian) -> Option<u32> {
+    if bytes.len()  == 0 { return None; }
+
     let mut total_size = match endian {
-        Endian::Big => super::PARSE_CONST_WIIU + CLASS_SIZE_WIIU + BASE_OVERHEAD_WIIU,
-        Endian::Little => super::PARSE_CONST_NX + CLASS_SIZE_NX + BASE_OVERHEAD_NX,
+        Endian::Big => BASE_OVERHEAD_WIIU,
+        Endian::Little => BASE_OVERHEAD_NX,
     };
 
     let a = ParameterIO::from_binary(bytes).ok()?;

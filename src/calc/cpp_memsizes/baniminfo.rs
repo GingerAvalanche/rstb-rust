@@ -5,16 +5,15 @@ use roead::byml::Byml;
 use super::cpp_classes::{sead, AnimationInfo::*};
 use crate::Endian;
 
-const CLASS_SIZE_WIIU: usize = size_of::<AnimInfo<u32>>();
-const CLASS_SIZE_NX: usize = size_of::<AnimInfo<u64>>();
-
 const OVERHEAD_WIIU: usize = 0xAC;
 const OVERHEAD_NX: usize = 0xD0;
 
 pub fn parse_size(bytes: &[u8], endian: Endian) -> Option<u32> {
+    if bytes.len()  == 0 { return None; }
+
     let mut total_size = match endian {
-        Endian::Big => super::PARSE_CONST_WIIU + CLASS_SIZE_WIIU + OVERHEAD_WIIU,
-        Endian::Little => super::PARSE_CONST_NX + CLASS_SIZE_NX + OVERHEAD_NX,
+        Endian::Big => OVERHEAD_WIIU,
+        Endian::Little => OVERHEAD_NX,
     };
 
     let (
