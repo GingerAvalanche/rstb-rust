@@ -121,7 +121,6 @@ pub enum RstbError {
     MissingExtension(String),
     #[error("I/O error: {0}")]
     IOError(#[from] std::io::Error),
-    #[cfg(feature = "yaz0")]
     #[error("Error compressing RSTB: {0}")]
     Yaz0Error(#[from] yaz0::Error),
     #[error("Needed feature {0} not enabled")]

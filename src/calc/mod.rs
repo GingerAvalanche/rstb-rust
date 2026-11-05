@@ -62,6 +62,7 @@ use std::path::Path;
 use info::{get_factory_info, ParseSize};
 
 use crate::{Endian, Result};
+use crate::calc::info::FactoryType;
 
 const PARSE_CONST_WIIU: u32 = 0xe4;
 const PARSE_CONST_NX: u32 = 0x168;
@@ -127,40 +128,36 @@ fn calc_or_estimate_from_size_and_name(
     if let Some(dot_pos) = name.find('.') {
         let rounded = round_32(filesize);
         let raw_ext = &name[dot_pos + 1..];
-        let ext = raw_ext.strip_s().canon_to_factory();
-        let (size, _, parse_size) = get_factory_info(ext, endian, &Vec::new());
+        let ext = raw_ext.strip_s().canon_to_factory().into();
+        let parse_const = match endian {
+            Endian::Big => PARSE_CONST_WIIU,
+            Endian::Little => PARSE_CONST_NX,
+        };
+        let (size, alignment, parse_size) = get_factory_info(ext, endian, &Vec::new());
         match parse_size {
             ParseSize::Simple(parse_size) => {
                 Some(match endian {
                     Endian::Big => {
-                        rounded
-                            + PARSE_CONST_WIIU
-                            + size
-                            + parse_size
-                            + match ext {
-                                "beventpack" => 0xe0,
-                                "bfevfl" => 0x58,
-                                "hkrb" => 40,
-                                "bdmgparam" => (rounded as f32 * 0.666) as u32,
-                                _ => 0,
-                            }
+                        match ext {
+                            FactoryType::EffectSettingList | FactoryType::Map => round_32(filesize) +
+                                align_to(parse_const + size + parse_size, alignment),
+                            _ => rounded
+                                + align_to(parse_const + size + parse_size, alignment)
+                                + match ext {
+                                    FactoryType::EventPack => 0xe0,
+                                    _ => 0,
+                                },
+                        }
                     }
                     Endian::Little => {
-                        rounded
-                            + PARSE_CONST_NX
-                            + size
-                            + parse_size
-                            + match ext {
-                                "bdmgparam" => (rounded as f32 * 0.666) as u32,
-                                _ => 0,
-                            }
+                        rounded + align_to(parse_const + size + parse_size, alignment)
                     }
                 })
             }
             ParseSize::Complex(_parse_size) => {
                 if estimate {
                     match ext {
-                        "baniminfo" => {
+                        FactoryType::AnimInfo => {
                             Some(
                                 ((rounded as f32 * (if filesize > 36864 { 1.5 } else { 4.0 }))
                                     as u32
@@ -172,7 +169,7 @@ fn calc_or_estimate_from_size_and_name(
                                     },
                             )
                         }
-                        "bfres" => Some(estimate_bfres(filesize, endian)),
+                        FactoryType::CafeResource => Some(estimate_bfres(filesize, endian)),
                         _ => estimate_aamp(filesize, name, endian),
                     }
                 } else {
@@ -244,7 +241,7 @@ fn calc_or_estimate_from_bytes_and_name(
             Endian::Little => round_32(filesize),
         };
         let raw_ext = &name[dot_pos + 1..];
-        let ext = raw_ext.strip_s().canon_to_factory();
+        let ext = raw_ext.strip_s().canon_to_factory().into();
         let parse_const = match endian {
             Endian::Big => PARSE_CONST_WIIU,
             Endian::Little => PARSE_CONST_NX,
@@ -255,14 +252,14 @@ fn calc_or_estimate_from_bytes_and_name(
                 Some(match endian {
                     Endian::Big => {
                         match ext {
-                            "esetlist" | "mubin" => round_32(filesize) +
+                            FactoryType::EffectSettingList | FactoryType::Map => round_32(filesize) +
                                 align_to(parse_const + size + parse_size, alignment),
                             _ => rounded
                                 + align_to(parse_const + size + parse_size, alignment)
                                 + match ext {
-                                    "beventpack" => 0xe0,
+                                    FactoryType::EventPack => 0xe0,
                                     _ => 0,
-                                }
+                                },
                         }
                     }
                     Endian::Little => {
@@ -276,7 +273,7 @@ fn calc_or_estimate_from_bytes_and_name(
                         align_to(parse_const + size + parse_size, alignment)),
                     None => match estimate {
                         true => match ext {
-                            "bfres" => Some(estimate_bfres(filesize, endian)),
+                            FactoryType::CafeResource => Some(estimate_bfres(filesize, endian)),
                             _ => estimate_aamp(filesize, name, endian)
                         },
                         false => None,
