@@ -260,6 +260,10 @@ fn calc_or_estimate_from_bytes_and_name(
             "Tex2.sbfres" => "Tex2.bfres",
             "product.byml" => "byml",
             "product.sbyml" => "byml",
+            "hght.sstera" => "stera",
+            "mate.sstera" => "stera",
+            "grass.extm.sstera" => "stera",
+            "water.extm.sstera" => "stera",
             _ => {
                 if let Some(ext) = raw_ext.strip_prefix('s') {
                     ext
